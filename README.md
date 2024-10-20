@@ -2,21 +2,25 @@
 
 ## Overview
 
-Socket-C is a repository for learning socket programming in C using the Winsock2 library. It demonstrates network communication through two games: Blackjack and Rock-Paper-Scissors, simulating multiplayer interactions across different computers. This repository offers a practical introduction to socket programming by providing hands-on examples of networking concepts in action.
+Socket-C is a repository designed for learning socket programming in C, using the Winsock2 library. It demonstrates network communication through two multiplayer games: Blackjack and Rock-Paper-Scissors. By simulating interactions across multiple computers, Socket-C provides a hands-on approach to understanding socket programming concepts.
 
 ## Features
 
 - Multiplayer support for up to 4 players
-- Multiple game modes for Blackjack: Player vs Environment (PvE), 1v1, 1v2, 1v3, 1v4
 - Real-time game state updates between clients
 - Color-coded terminal output for improved readability
-- Practical demonstrations of core socket programming concepts
+- Practical demonstrations of essential socket programming concepts
+
+## Games
+
+- Blackjack ♠♥
+- Rock-Paper-Scissors 🪨📃✂
 
 ## Prerequisites
 
 - **Windows OS**
-- **Microsoft Visual Studio** or any C compiler with Winsock2 support (e.g., GCC with MinGW)
-- Basic understanding of C programming and networking concepts
+- **Microsoft Visual Studio** or any C compiler supporting Winsock2 (e.g., GCC with MinGW)
+- Basic understanding of C and network programming concepts
 
 ## Setup Instructions
 
@@ -46,6 +50,7 @@ Socket-C is a repository for learning socket programming in C using the Winsock2
      ```
 
    - **For PowerShell:**
+
      ```sh
      ./server
      ./client
@@ -53,7 +58,7 @@ Socket-C is a repository for learning socket programming in C using the Winsock2
 
 ## Notes
 
-- Ensure your firewall allows communication for the server and client programs to work properly.
-- All players must be on the same network, or you may need to configure port forwarding for remote connections.
+- Ensure your firewall allows communication for the server and client programs to work correctly.
+- All players should be on the same network unless port forwarding is configured for remote connections.
 
-This revision adds clarity, consistency, and useful details (like the note about firewalls) while maintaining the concise structure.
+This final version tightens up some wording and aligns well with your original intent.
