@@ -9,6 +9,26 @@
 #define PORT 8080
 #define BUFFER_SIZE 1024
 
+void printBanner() {
+    const char *orange = "\033[38;5;208m";
+    const char *red = "\033[31m";
+    const char *yellow = "\033[1;33m";
+    const char *reset = "\033[0m";
+
+    // clear screen
+    system("cls");
+
+    printf("   %s_____%s     %s_____%s\n", orange, reset, red, reset);
+    printf("  %s|A    |%s   %s|K    |%s\n", orange, reset, red, reset);
+    printf("  %s|     |%s   %s|     |%s\n", orange, reset, red, reset);
+    printf("  %s|  ^  |%s   %s|  %%  |%s\n", orange, reset, red, reset);
+    printf("  %s|     |%s   %s|     |%s\n", orange, reset, red, reset);
+    printf("  %s|____A|%s   %s|____K|%s\n", orange, reset, red, reset);
+    printf("      %sBlackJack%s\n", yellow, reset);
+    // printf("      BlackJack\n");
+    printf("\n");
+}
+
 void error_exit(const char *message) {
     printf("%s. Error Code: %d\n", message, WSAGetLastError());
     WSACleanup();
@@ -44,20 +64,35 @@ int main() {
     }
 
     printf("Connected to server.\n");
+    printBanner();
 
     // Receive game mode prompt from server
     bytesRead = recv(clientSocket, buffer, BUFFER_SIZE, 0);
     if (bytesRead > 0) {
         buffer[bytesRead] = '\0'; // Null-terminate the string
-        printf("Server:\n %s\n", buffer);
+        printf("\nServer:\n%s\n", buffer);
 
         // Send game mode selection to server
-        printf(" \033[1;31mPick from 1-5:\033[0m ");
+        // printf("Pick from 1-5: ");
         fgets(buffer, BUFFER_SIZE, stdin);
         buffer[strcspn(buffer, "\n")] = '\0'; // Remove newline character
         send(clientSocket, buffer, strlen(buffer), 0);
     } else {
         error_exit("Failed to receive game mode prompt from server");
+    }
+
+    // Receive player name prompt from server
+    bytesRead = recv(clientSocket, buffer, BUFFER_SIZE, 0);
+    if (bytesRead > 0) {
+        buffer[bytesRead] = '\0'; // Null-terminate the string
+        printf("\nServer:\n%s\n", buffer);
+
+        // Send player name to server
+        fgets(buffer, BUFFER_SIZE, stdin);
+        buffer[strcspn(buffer, "\n")] = '\0'; // Remove newline character
+        send(clientSocket, buffer, strlen(buffer), 0);
+    } else {
+        error_exit("Failed to receive player name prompt from server");
     }
 
     // Game loop
@@ -66,7 +101,7 @@ int main() {
         bytesRead = recv(clientSocket, buffer, BUFFER_SIZE, 0);
         if (bytesRead > 0) {
             buffer[bytesRead] = '\0'; // Null-terminate the string
-            printf("Server:\n %s\n", buffer);
+            printf("\nServer:\n%s\n", buffer);
 
             // Check if the server is prompting for an action
             if (strstr(buffer, "Your turn: hit or stand?") != NULL) {
