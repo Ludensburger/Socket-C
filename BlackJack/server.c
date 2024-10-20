@@ -11,8 +11,7 @@
 #define MAX_PLAYERS 4
 
 // Define constants for the strings with colors
-const char *DEALER_STRING = "\033[1;33mDealer:\t\033[0m";     // Yellow color
-const char *PLAYER_STRING = "\033[1;34m Player %d:\t\033[0m"; // Blue color
+const char *DEALER_STRING = "\033[1;33mDealer:\033[0m"; // Yellow color
 
 typedef struct {
     SOCKET socket;
@@ -20,7 +19,8 @@ typedef struct {
     int hand[10]; // Array to hold cards
     int hand_size;
     int score;
-    int is_active; // 1 if player is still in the game, 0 if busted or stood
+    int is_active;  // 1 if player is still in the game, 0 if busted or stood
+    char color[10]; // Color code for the player
 } Player;
 
 void shuffle_deck(int deck[]) {
@@ -95,7 +95,7 @@ void send_game_state(Player players[], int player_count, Player *dealer) {
     int offset = 0;
 
     // Add dealer's cards to the buffer
-    offset += snprintf(buffer + offset, sizeof(buffer) - offset, "%s", DEALER_STRING);
+    offset += snprintf(buffer + offset, sizeof(buffer) - offset, " %s", DEALER_STRING);
     for (int i = 0; i < dealer->hand_size; i++) {
         offset += snprintf(buffer + offset, sizeof(buffer) - offset, " | %s", card_to_string(dealer->hand[i]));
     }
@@ -103,7 +103,7 @@ void send_game_state(Player players[], int player_count, Player *dealer) {
 
     // Add each player's cards to the buffer
     for (int i = 0; i < player_count; i++) {
-        offset += snprintf(buffer + offset, sizeof(buffer) - offset, PLAYER_STRING, i + 1);
+        offset += snprintf(buffer + offset, sizeof(buffer) - offset, " %s%s:\t\033[0m", players[i].color, players[i].name);
         for (int j = 0; j < players[i].hand_size; j++) {
             offset += snprintf(buffer + offset, sizeof(buffer) - offset, " | %s", card_to_string(players[i].hand[j]));
         }
@@ -126,14 +126,14 @@ void prompt_player_action(Player players[], int player_count, Player *player, Pl
     while (player->is_active) {
         // Combine game state and prompt into a single message
         int offset = 0;
-        offset += snprintf(buffer + offset, sizeof(buffer) - offset, "%s", DEALER_STRING);
+        offset += snprintf(buffer + offset, sizeof(buffer) - offset, " %s", DEALER_STRING);
         for (int i = 0; i < dealer->hand_size; i++) {
             offset += snprintf(buffer + offset, sizeof(buffer) - offset, " | %s", card_to_string(dealer->hand[i]));
         }
         offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\n");
 
         for (int i = 0; i < player_count; i++) {
-            offset += snprintf(buffer + offset, sizeof(buffer) - offset, PLAYER_STRING, i + 1);
+            offset += snprintf(buffer + offset, sizeof(buffer) - offset, " %s%s:\t\033[0m", players[i].color, players[i].name);
             for (int j = 0; j < players[i].hand_size; j++) {
                 offset += snprintf(buffer + offset, sizeof(buffer) - offset, " | %s", card_to_string(players[i].hand[j]));
             }
@@ -149,7 +149,8 @@ void prompt_player_action(Player players[], int player_count, Player *player, Pl
         bytesRead = recv(player->socket, buffer, BUFFER_SIZE, 0);
         if (bytesRead > 0) {
             buffer[bytesRead] = '\0'; // Null-terminate the string
-            printf("Received from player: %s\n", buffer);
+            // printf("Received from player %s: %s\n", player->name, buffer);
+            printf("Received from %s: %s\n", player->name, buffer);
 
             if (strcmp(buffer, "hit") == 0) {
                 // Deal a new card to the player
@@ -158,14 +159,14 @@ void prompt_player_action(Player players[], int player_count, Player *player, Pl
 
                 // Combine updated game state and message
                 offset = 0;
-                offset += snprintf(buffer + offset, sizeof(buffer) - offset, "%s", DEALER_STRING);
+                offset += snprintf(buffer + offset, sizeof(buffer) - offset, " %s", DEALER_STRING);
                 for (int i = 0; i < dealer->hand_size; i++) {
                     offset += snprintf(buffer + offset, sizeof(buffer) - offset, " | %s", card_to_string(dealer->hand[i]));
                 }
                 offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\n");
 
                 for (int i = 0; i < player_count; i++) {
-                    offset += snprintf(buffer + offset, sizeof(buffer) - offset, PLAYER_STRING, i + 1);
+                    offset += snprintf(buffer + offset, sizeof(buffer) - offset, " %s%s:\t\033[0m", players[i].color, players[i].name);
                     for (int j = 0; j < players[i].hand_size; j++) {
                         offset += snprintf(buffer + offset, sizeof(buffer) - offset, " | %s", card_to_string(players[i].hand[j]));
                     }
@@ -205,7 +206,7 @@ void determine_winners(Player players[], int player_count, Player *dealer) {
     int offset = 0;
 
     // Add dealer's cards to the buffer
-    offset += snprintf(buffer + offset, sizeof(buffer) - offset, "%s", DEALER_STRING);
+    offset += snprintf(buffer + offset, sizeof(buffer) - offset, " %s", DEALER_STRING);
     for (int i = 0; i < dealer->hand_size; i++) {
         offset += snprintf(buffer + offset, sizeof(buffer) - offset, " | %s", card_to_string(dealer->hand[i]));
     }
@@ -213,7 +214,7 @@ void determine_winners(Player players[], int player_count, Player *dealer) {
 
     // Add each player's cards to the buffer
     for (int i = 0; i < player_count; i++) {
-        offset += snprintf(buffer + offset, sizeof(buffer) - offset, PLAYER_STRING, i + 1);
+        offset += snprintf(buffer + offset, sizeof(buffer) - offset, " %s%s:\t\033[0m", players[i].color, players[i].name);
         for (int j = 0; j < players[i].hand_size; j++) {
             offset += snprintf(buffer + offset, sizeof(buffer) - offset, " | %s", card_to_string(players[i].hand[j]));
         }
@@ -303,17 +304,80 @@ int main() {
     players[player_count].hand_size = 0;
     players[player_count].score = 0;
     players[player_count].is_active = 1;
+    strcpy(players[player_count].color, "\033[1;34m"); // Blue color for Player 1
     player_count++;
     printf("Player 1 connected.\n");
 
     // Prompt the first player to choose the game mode
-    send(clientSocket, "\033[1;31mChoose game mode:\033[0m \033[1;32m1-PvE\033[0m, \033[1;33m2-1v1\033[0m, \033[1;34m3-1v2\033[0m, \033[1;35m4-1v3\033[0m, \033[1;36m5-1v4\033[0m\n", 100, 0);
+    const char *game_mode_prompt = "\033[1;31mChoose game mode:\033[0m \033[1;32m1-PvE\033[0m, \033[1;33m2-1v1\033[0m, \033[1;34m3-1v2\033[0m, \033[1;35m4-1v3\033[0m, \033[1;36m5-1v4\033[0m\n";
+    send(clientSocket, game_mode_prompt, strlen(game_mode_prompt), 0);
+
     char buffer[BUFFER_SIZE];
     int bytesRead = recv(clientSocket, buffer, BUFFER_SIZE, 0);
+
     if (bytesRead > 0) {
         buffer[bytesRead] = '\0'; // Null-terminate the string
         game_mode = atoi(buffer);
         printf("Game mode selected: %d\n", game_mode);
+
+        // Validate the game mode
+        if (game_mode < 1 || game_mode > 5) {
+            printf("Invalid game mode. Exiting...\n");
+            closesocket(clientSocket);
+            closesocket(serverSocket);
+            WSACleanup();
+            return 1;
+        } else {
+            // Enter player name for Player 1
+            send(clientSocket, "Enter your name: ", 18, 0);
+            bytesRead = recv(clientSocket, players[0].name, sizeof(players[0].name) - 1, 0);
+            if (bytesRead > 0) {
+                players[0].name[bytesRead] = '\0'; // Null-terminate the string
+                printf("Player 1 name: %s\n", players[0].name);
+            } else {
+                printf("recv failed: %d\n", WSAGetLastError());
+                closesocket(clientSocket);
+                closesocket(serverSocket);
+                WSACleanup();
+                return 1;
+            }
+        }
+
+        int required_players = game_mode == 1 ? 1 : game_mode;
+
+        // Accept additional player connections if needed
+        for (int i = 1; i < required_players; i++) {
+            clientSocket = accept(serverSocket, (struct sockaddr *)&clientAddr, &addrLen);
+            if (clientSocket == INVALID_SOCKET) {
+                printf("Accept failed. Error Code: %d\n", WSAGetLastError());
+                closesocket(serverSocket);
+                WSACleanup();
+                return 1;
+            }
+
+            players[player_count].socket = clientSocket;
+            players[player_count].hand_size = 0;
+            players[player_count].score = 0;
+            players[player_count].is_active = 1;
+            snprintf(players[player_count].color, sizeof(players[player_count].color), "\033[1;%dm", 31 + i); // Assign different colors
+            player_count++;
+            printf("Player %d connected.\n", i + 1);
+
+            // Enter player name for additional players
+            send(clientSocket, "Enter your name: ", 18, 0);
+            bytesRead = recv(clientSocket, players[i].name, sizeof(players[i].name) - 1, 0);
+            if (bytesRead > 0) {
+                players[i].name[bytesRead] = '\0'; // Null-terminate the string
+                printf("Player %d name: %s\n", i + 1, players[i].name);
+            } else {
+                printf("recv failed: %d\n", WSAGetLastError());
+                closesocket(clientSocket);
+                closesocket(serverSocket);
+                WSACleanup();
+                return 1;
+            }
+        }
+
     } else {
         printf("recv failed: %d\n", WSAGetLastError());
         closesocket(clientSocket);
@@ -321,28 +385,6 @@ int main() {
         WSACleanup();
         return 1;
     }
-
-    // Determine the number of players needed based on the game mode
-    int required_players = game_mode == 1 ? 1 : game_mode;
-
-    // Accept additional player connections if needed
-    while (player_count < required_players) {
-        clientSocket = accept(serverSocket, (struct sockaddr *)&clientAddr, &addrLen);
-        if (clientSocket == INVALID_SOCKET) {
-            printf("Accept failed. Error Code: %d\n", WSAGetLastError());
-            closesocket(serverSocket);
-            WSACleanup();
-            return 1;
-        }
-
-        players[player_count].socket = clientSocket;
-        players[player_count].hand_size = 0;
-        players[player_count].score = 0;
-        players[player_count].is_active = 1;
-        player_count++;
-        printf("Player %d connected.\n", player_count);
-    }
-
     // Shuffle deck
     shuffle_deck(deck);
 
