@@ -24,6 +24,7 @@ typedef struct {
 } Player;
 
 void shuffle_deck(int deck[]) {
+
     for (int i = 0; i < 52; i++) {
         deck[i] = i; // Fill the deck with values 0-51
     }
@@ -65,8 +66,8 @@ void calculate_score(Player *player) {
         if (card_value >= 10) {
             player->score += 10;
         } else if (card_value == 0) {
-            player->score += 11;
             aces++;
+            player->score += 11;
         } else {
             player->score += card_value + 1;
         }
@@ -195,9 +196,16 @@ void prompt_player_action(Player players[], int player_count, Player *player, Pl
 }
 
 void dealer_turn(Player *dealer, int deck[], int *deck_index) {
-    while (dealer->score < 17) {
+    int aces = 0;
+    while (dealer->score < 17 || (dealer->score == 17 && aces > 0)) {
         dealer->hand[dealer->hand_size++] = deck[(*deck_index)++];
         calculate_score(dealer);
+        aces = 0;
+        for (int i = 0; i < dealer->hand_size; i++) {
+            if (dealer->hand[i] % 13 == 0) {
+                aces++;
+            }
+        }
     }
 }
 
