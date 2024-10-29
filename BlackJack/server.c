@@ -244,6 +244,7 @@ void prompt_player_action(Player players[], int player_count, Player *player, Pl
         offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\nYour turn: hit or stand?\n");
 
         // Send the combined message to the player
+        calculate_score(player);
         send(player->socket, buffer, strlen(buffer), 0);
 
         // Receive action from player
@@ -286,6 +287,7 @@ void prompt_player_action(Player players[], int player_count, Player *player, Pl
                 send(player->socket, buffer, strlen(buffer), 0);
             } else if (strcmp(buffer, "stand") == 0) {
                 player->is_active = 0;
+                calculate_score(player); // Calculate final score after standing
                 send(player->socket, "You chose to stand.\n", 20, 0);
             } else {
                 send(player->socket, "Invalid action. Please type 'hit' or 'stand'.\n", 45, 0);
