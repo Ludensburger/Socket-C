@@ -164,11 +164,11 @@ const char *card_to_string(int card) {
 }
 
 void printStack(Stack *stack) {
-    srand(time(NULL));      // Seed the random number generator
-    int cardPartition = 10; // Adjust the division of cards in the server if needed
+    srand(time(NULL));     // Seed the random number generator
+    int cardPartition = 2; // Adjust the division of cards in the server if needed
     for (int i = 0; i <= stack->top; i++) {
-        if (i % 10 == 0) {
-            printf("-------Stack %d-------\n", (i / cardPartition) + 1);
+        if (i % cardPartition == 0) {
+            printf("-------Stack %d-------\n", (i / 10) + 1);
         }
         const char *color = getRandomColor();
         printf("%s%s\033[0m\n", color, card_to_string(stack->cards[i]));
