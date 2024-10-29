@@ -116,6 +116,19 @@ void display_player_cards(Player *player) {
     printf("\n");
 }
 
+const char *card_to_string(int card) {
+    static char buffer[64]; // Increased buffer size
+    const char *values[] = {"Ace", "2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King"};
+    const char *suits[] = {"Spades", "Hearts", "Diamonds", "Clubs"};
+    const char *colors[] = {"\033[38;5;208m", "\033[31m", "\033[36m", "\033[92m"}; // Orange, Red, Cyan, Light Green
+
+    int value_index = card % 13;
+    int suit_index = card / 13;
+
+    snprintf(buffer, sizeof(buffer), "%s%s of %s\033[0m", colors[suit_index], values[value_index], suits[suit_index]);
+    return buffer;
+}
+
 // Function to generate a random color code
 const char *getRandomColor() {
     const char *colors[] = {
@@ -148,30 +161,32 @@ void calculate_score(Player *player) {
         player->score -= 10;
         aces--;
     }
-}
 
-const char *card_to_string(int card) {
-    static char buffer[64]; // Increased buffer size
-    const char *values[] = {"Ace", "2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King"};
-    const char *suits[] = {"Spades", "Hearts", "Diamonds", "Clubs"};
-    const char *colors[] = {"\033[38;5;208m", "\033[31m", "\033[36m", "\033[92m"}; // Orange, Red, Cyan, Light Green
-
-    int value_index = card % 13;
-    int suit_index = card / 13;
-
-    snprintf(buffer, sizeof(buffer), "%s%s of %s\033[0m", colors[suit_index], values[value_index], suits[suit_index]);
-    return buffer;
+    // Improved debugging statements to trace the score calculation
+    printf("\n--- Debug Info ---\n");
+    printf("Player: %s\n", player->name);
+    printf("Score: %d\n", player->score);
+    printf("Hand: ");
+    for (int i = 0; i < player->hand_size; i++) {
+        printf("%s", card_to_string(player->hand[i]));
+        if (i < player->hand_size - 1) {
+            printf(", "); // Add a comma between cards
+        }
+    }
+    printf("\n------------------\n\n");
 }
 
 void printStack(Stack *stack) {
     srand(time(NULL));     // Seed the random number generator
     int cardPartition = 2; // Adjust the division of cards in the server if needed
     for (int i = 0; i <= stack->top; i++) {
-        if (i % cardPartition == 0) {
-            printf("-------Stack %d-------\n", (i / 10) + 1);
+        if (i % 10 == 0 && i != 0) {
+            printf("\n"); // Print a blank line for a new stack
         }
-        const char *color = getRandomColor();
-        printf("%s%s\033[0m\n", color, card_to_string(stack->cards[i]));
+        if (i % cardPartition == 0) {
+            printf("-------Stack %d-------\n", (i / 10) + 1); // Stack Bar
+        }
+        printf("%s\n", card_to_string(stack->cards[i])); // Cards
     }
     printf("\n");
 }
@@ -243,7 +258,7 @@ void prompt_player_action(Player players[], int player_count, Player *player, Pl
                     fillStack(cardStack);
                 }
                 player->hand[player->hand_size++] = pop(cardStack);
-                calculate_score(player);
+                calculate_score(player); // Calculate score after dealing a new card
 
                 // Combine updated game state and message
                 offset = 0;
@@ -462,7 +477,14 @@ int main() {
             players[player_count].hand_size = 0;
             players[player_count].score = 0;
             players[player_count].is_active = 1;
-            strcpy(players[player_count].color, getRandomColor()); // Assign random color to additional players
+
+            const char *otherPlayerColor = getRandomColor();
+
+            while (playerColor == otherPlayerColor) {
+                otherPlayerColor = getRandomColor();
+            }
+
+            strcpy(players[player_count].color, otherPlayerColor); // Assign random color to additional players
             player_count++;
             printf("Player %d connected.\n", i + 1);
 
