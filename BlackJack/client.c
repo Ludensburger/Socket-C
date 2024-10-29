@@ -33,7 +33,7 @@ void printBanner() {
     const char *test1 = getRandomColor();
     const char *test2 = getRandomColor();
 
-    if (test1 == test2) {
+    while (test1 == test2) {
         test2 = getRandomColor();
     }
 
