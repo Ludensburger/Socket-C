@@ -1,6 +1,6 @@
 # Blackjack Game
 
-This project is a modular implementation of a Blackjack game written in C. The code is split into separate files to improve maintainability and organization, addressing the challenges of having everything in only two files. A `bash.sh` script is also included to streamline the build process, making it simple to compile and execute the game.
+This project is a modular implementation of a Blackjack game written in C. The code is split into separate files to improve maintainability and organization, addressing the challenges of having everything in only two files. A `build.sh` script is also included to streamline the build process, making it simple to compile and execute the game.
 
 ## Project Structure
 
@@ -9,12 +9,12 @@ The project’s modular structure consists of multiple files, each representing 
 ### Key Features
 
 - **Modularized Code**: The game’s logic is split into multiple files based on functionality, making it straightforward to understand and maintain.
-- **Efficient Build Process**: The `bash.sh` script compiles all necessary files and links them for execution, simplifying the build process.
+- **Efficient Build Process**: The `build.sh` script compiles all necessary files and links them for execution, simplifying the build process.
 - **Playable Blackjack**: The core functionality is a simple, text-based Blackjack game, with player and dealer interactions handled within the terminal.
 
 ## How to Build and Run
 
-To compile and run the game, you can use the included `bash.sh` script:
+To compile and run the game, you can use the included `build.sh` script:
 
 1. **Open a Terminal (or PowerShell)**:
 
@@ -23,11 +23,11 @@ To compile and run the game, you can use the included `bash.sh` script:
 2. **Run the Script**:
    - In Linux/Mac, use:
      ```bash
-     ./bash.sh
+     ./build.sh
      ```
    - In Windows PowerShell, run:
      ```powershell
-     ./bash.sh
+     ./build.sh
      ```
 
 This command compiles the game, creating an executable that you can play in the terminal.
@@ -43,4 +43,4 @@ Blackjack, also known as 21, is a popular card game where players aim to achieve
 ### Implementation Details
 
 - **Modularity**: Each file in the project handles a specific aspect of the game, such as card logic, game rules, and user interaction, making it easy to locate and modify code segments.
-- **Bash Script**: The `bash.sh` script compiles all modules and links them, so only one command is needed to build and run the game.
+- **Build Script**: The `build.sh` script compiles all modules and links them, so only one command is needed to build and run the game.
