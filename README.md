@@ -56,9 +56,11 @@ Socket-C is a repository designed for learning socket programming in C, using th
      ./client
      ```
 
+## Template Directory
+
+I've also added a `template` directory for you to create your own socket programming projects. This serves as your starting point or boilerplate in C socket programming.
+
 ## Notes
 
 - Ensure your firewall allows communication for the server and client programs to work correctly.
 - All players should be on the same network unless port forwarding is configured for remote connections.
-
-This final version tightens up some wording and aligns well with your original intent.
