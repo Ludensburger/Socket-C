@@ -169,12 +169,5 @@ int main() {
     closesocket(clientSocket);
     WSACleanup();
 
-    // Wait for user input before exiting
-    printf("\n");
-    printf("%sGame over.%s\n\n", getColor(0), "\033[0m");
-
-    printf("Press Enter to exit...");
-    getchar();
-
     return 0;
 }
