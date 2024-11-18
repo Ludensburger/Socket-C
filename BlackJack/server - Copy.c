@@ -10,19 +10,6 @@
 #define PORT 8080
 #define BUFFER_SIZE 1024
 
-const char *getColor(int choice) {
-    const char *colors[] = {
-        "\033[31m", // Red
-        "\033[32m", // Green
-        "\033[33m", // Yellow
-        "\033[34m", // Blue
-        "\033[35m", // Magenta
-        "\033[36m", // Cyan
-    };
-
-    return colors[choice];
-}
-
 // Function to generate a random color code
 const char *getRandomColor() {
     const char *colors[] = {
@@ -168,13 +155,5 @@ int main() {
     // Cleanup
     closesocket(clientSocket);
     WSACleanup();
-
-    // Wait for user input before exiting
-    printf("\n");
-    printf("%sGame over.%s\n\n", getColor(0), "\033[0m");
-
-    printf("Press Enter to exit...");
-    getchar();
-
     return 0;
 }
