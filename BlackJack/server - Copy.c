@@ -1,13 +1,67 @@
-#include "utils.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include <winsock2.h>
 
-#define PORT 8080
-#define BUFFER_SIZE 4096      // Increased buffer size
+#pragma comment(lib, "Ws2_32.lib")
+
 #define SERVER_IP "127.0.0.1" // Change to the server's IP address if needed
+#define PORT 8080
+#define BUFFER_SIZE 1024
+
+// Function to generate a random color code
+const char *getRandomColor() {
+    const char *colors[] = {
+        "\033[31m", // Red
+        "\033[32m", // Green
+        "\033[33m", // Yellow
+        "\033[34m", // Blue
+        "\033[35m", // Magenta
+        "\033[36m", // Cyan
+    };
+    int num_colors = sizeof(colors) / sizeof(colors[0]);
+    return colors[rand() % num_colors];
+}
+
+void printBanner() {
+    const char *orange = "\033[38;5;208m";
+    const char *red = "\033[31m";
+    const char *yellow = "\033[1;33m";
+    const char *reset = "\033[0m";
+
+    const char *test1 = getRandomColor();
+    const char *test2 = getRandomColor();
+
+    while (test1 == test2) {
+        test2 = getRandomColor();
+    }
+
+    // printf("Test1 Color: %s\n", test1);
+    // printf("Test2 Color: %s\n", test2);
+
+    // printf("Test1 Color: %sTest1\033[0m\n", test1);
+    // printf("Test2 Color: %sTest2\033[0m\n", test2);
+
+    // clear screen
+    system("cls");
+
+    printf("   %s_____%s     %s_____%s\n", test1, reset, test2, reset);
+    printf("  %s|A    |%s   %s|K    |%s\n", test1, reset, test2, reset);
+    printf("  %s|     |%s   %s|     |%s\n", test1, reset, test2, reset);
+    printf("  %s|  ^  |%s   %s|  %%  |%s\n", test1, reset, test2, reset);
+    printf("  %s|     |%s   %s|     |%s\n", test1, reset, test2, reset);
+    printf("  %s|____A|%s   %s|____K|%s\n", test1, reset, test2, reset);
+    printf("      %sBlackJack%s\n", yellow, reset);
+    // printf("      BlackJack\n");
+    printf("\n");
+}
+
+void error_exit(const char *message) {
+    printf("%s. Error Code: %d\n", message, WSAGetLastError());
+    WSACleanup();
+    exit(1);
+}
 
 int main() {
     WSADATA wsaData;
@@ -101,12 +155,5 @@ int main() {
     // Cleanup
     closesocket(clientSocket);
     WSACleanup();
-
-    printf("%s\nGame Over.\n\n%s", getColor(0), "\033[0m");
-
-    // Wait for user input before exiting
-    printf("\nPress Enter to exit...");
-    getchar();
-
     return 0;
 }

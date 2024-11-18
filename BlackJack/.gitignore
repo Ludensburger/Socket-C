@@ -1,0 +1,32 @@
+# Ignore executable files
+*.exe
+
+# Ignore object files
+*.o
+
+# Ignore build directories
+/build/
+/bin/
+/obj/
+
+# Ignore temporary files
+*.tmp
+*.log
+*.bak
+*.swp
+
+# Ignore Visual Studio Code settings
+.vscode/
+
+# Ignore Windows specific files
+Thumbs.db
+Desktop.ini
+
+# Ignore compiled dynamic libraries
+*.dll
+*.so
+*.dylib
+
+# Ignore compiled static libraries
+*.lib
+*.a
