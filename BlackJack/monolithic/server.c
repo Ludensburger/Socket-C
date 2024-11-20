@@ -90,32 +90,6 @@ void resetAndFillStack(Stack *stack) {
     }
 }
 
-void deal_initial_cards(Player players[], int player_count, Player *dealer, Stack *cardStack) {
-    for (int i = 0; i < player_count; i++) {
-        players[i].hand_size = 0; // Clear player hands
-        for (int j = 0; j < 2; j++) {
-            players[i].hand[players[i].hand_size++] = pop(cardStack);
-        }
-    }
-    // Deal two cards to the dealer
-    dealer->hand_size = 0; // Clear dealer hand
-    for (int j = 0; j < 2; j++) {
-        dealer->hand[dealer->hand_size++] = pop(cardStack);
-    }
-}
-
-void cleanStack(Stack *stack) {
-    initializeStack(stack);
-}
-
-void display_player_cards(Player *player) {
-    printf("Player %s's cards: ", player->name);
-    for (int i = 0; i < player->hand_size; i++) {
-        printf("%d ", player->hand[i]);
-    }
-    printf("\n");
-}
-
 const char *card_to_string(int card) {
     static char buffer[64]; // Increased buffer size
     const char *values[] = {"Ace", "2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King"};
@@ -143,42 +117,116 @@ const char *getRandomColor() {
     return colors[rand() % num_colors];
 }
 
-void calculate_score(Player *player) {
+void print_debug_info(Player *dealer, Player players[], int player_count) {
+
+    int debugCounter = 1;
+
+    printf("\n----------- Debug Info %d -----------\n", debugCounter++); // Add this line
+
+    // Show dealer's cards and score
+    printf("%s\n", DEALER_STRING); // Use the yellow colored dealer string
+    printf("Score: %d\n", dealer->score);
+    printf("Hand: ");
+    for (int i = 0; i < dealer->hand_size; i++) {
+        printf("%s", card_to_string(dealer->hand[i]));
+        if (i < dealer->hand_size - 1) {
+            printf(", ");
+        }
+    }
+    printf("\n\n");
+
+    // Show all players' cards
+    for (int i = 0; i < player_count; i++) {
+        printf("%s%s:\033[0m\n", players[i].color, players[i].name);
+        printf("Score: %d\n", players[i].score);
+        printf("Hand: ");
+        for (int j = 0; j < players[i].hand_size; j++) {
+            printf("%s", card_to_string(players[i].hand[j]));
+            if (j < players[i].hand_size - 1) {
+                printf(", ");
+            }
+        }
+        printf("\n\n");
+    }
+    printf("-----------------------------------\n\n");
+}
+
+void calculate_score(Player *player, Player players[], int player_count, Player *dealer) {
+
     player->score = 0;
     int aces = 0;
+
+    // Calculate the initial score and count the number of Aces
     for (int i = 0; i < player->hand_size; i++) {
         int card_value = player->hand[i] % 13;
+
+        // If face card (Jack, Queen, King), add 10 to the score
         if (card_value >= 10) {
             player->score += 10;
-        } else if (card_value == 0) {
+        }
+        // If Ace, initially add 11 to the score and increment the Ace count
+        else if (card_value == 0) {
             player->score += 11;
             aces++;
-        } else {
+        }
+        // For other cards (2 to 9), add their value to the score
+        else {
             player->score += card_value + 1;
         }
     }
+
+    // Adjust the score if it exceeds 21 by counting some Aces as 1 instead of 11
     while (player->score > 21 && aces > 0) {
         player->score -= 10;
         aces--;
     }
-
-    // Improved debugging statements to trace the score calculation
-    printf("\n--- Debug Info ---\n");
-    printf("Player: %s\n", player->name);
-    printf("Score: %d\n", player->score);
-    printf("Hand: ");
-    for (int i = 0; i < player->hand_size; i++) {
-        printf("%s", card_to_string(player->hand[i]));
-        if (i < player->hand_size - 1) {
-            printf(", "); // Add a comma between cards
-        }
-    }
-    printf("\n------------------\n\n");
 }
 
-void printStack(Stack *stack) {
-    srand(time(NULL));     // Seed the random number generator
-    int cardPartition = 2; // Adjust the division of cards in the server if needed
+void deal_initial_cards(Player players[], int player_count, Player *dealer, Stack *cardStack) {
+    for (int i = 0; i < player_count; i++) {
+        players[i].hand_size = 0; // Clear player hands
+        for (int j = 0; j < 2; j++) {
+            players[i].hand[players[i].hand_size++] = pop(cardStack);
+        }
+    }
+    // Deal two cards to the dealer
+    dealer->hand_size = 0; // Clear dealer hand
+    for (int j = 0; j < 2; j++) {
+        dealer->hand[dealer->hand_size++] = pop(cardStack);
+    }
+
+    // Calculate players' initial scores after dealing cards
+    for (int i = 0; i < player_count; i++) {
+        calculate_score(&players[i], players, player_count, dealer);
+    }
+
+    // Calculate dealer's score last
+    calculate_score(dealer, players, player_count, dealer);
+}
+
+void cleanStack(Stack *stack) {
+    initializeStack(stack);
+}
+
+void display_player_cards(Player *player) {
+    printf("Player %s's cards: ", player->name);
+    for (int i = 0; i < player->hand_size; i++) {
+        printf("%d ", player->hand[i]);
+    }
+    printf("\n");
+}
+
+void printStack(Stack *stack, int player_count) {
+
+    // Seed the random number generator
+    srand(time(NULL));
+
+    // Adjust the division of cards in the server if needed
+    // can be set to be dynamic based on the number of players
+    // Example:
+    int cardPartition = player_count;
+    // int cardPartition = 2;
+
     for (int i = 0; i <= stack->top; i++) {
         if (i % 10 == 0 && i != 0) {
             printf("\n"); // Print a blank line for a new stack
@@ -244,7 +292,7 @@ void prompt_player_action(Player players[], int player_count, Player *player, Pl
         offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\nYour turn: hit or stand?\n");
 
         // Send the combined message to the player
-        calculate_score(player);
+        calculate_score(player, players, player_count, dealer); // Calculate score before prompting for action
         send(player->socket, buffer, strlen(buffer), 0);
 
         // Receive action from player
@@ -259,7 +307,9 @@ void prompt_player_action(Player players[], int player_count, Player *player, Pl
                     fillStack(cardStack);
                 }
                 player->hand[player->hand_size++] = pop(cardStack);
-                calculate_score(player); // Calculate score after dealing a new card
+                calculate_score(dealer, players, player_count, dealer); // Add this line
+                calculate_score(player, players, player_count, dealer);
+                print_debug_info(dealer, players, player_count);
 
                 // Combine updated game state and message
                 offset = 0;
@@ -287,7 +337,10 @@ void prompt_player_action(Player players[], int player_count, Player *player, Pl
                 send(player->socket, buffer, strlen(buffer), 0);
             } else if (strcmp(buffer, "stand") == 0) {
                 player->is_active = 0;
-                calculate_score(player); // Calculate final score after standing
+                calculate_score(dealer, players, player_count, dealer); // Add this line
+                calculate_score(player, players, player_count, dealer);
+                print_debug_info(dealer, players, player_count);
+
                 send(player->socket, "You chose to stand.\n", 20, 0);
             } else {
                 send(player->socket, "Invalid action. Please type 'hit' or 'stand'.\n", 45, 0);
@@ -299,13 +352,13 @@ void prompt_player_action(Player players[], int player_count, Player *player, Pl
     }
 }
 
-void dealer_turn(Player *dealer, Stack *cardStack) {
+void dealer_turn(Player *dealer, Stack *cardStack, Player players[], int player_count) {
     while (dealer->score < 17) {
         if (isEmpty(cardStack)) {
             fillStack(cardStack);
         }
         dealer->hand[dealer->hand_size++] = pop(cardStack);
-        calculate_score(dealer);
+        calculate_score(dealer, players, player_count, dealer);
     }
 }
 
@@ -429,7 +482,14 @@ int main() {
     printf("Player 1 connected.\n");
 
     // Prompt the first player to choose the game mode
-    const char *game_mode_prompt = "\033[1;31mChoose game mode:\033[0m \033[1;32m1-PvE\033[0m, \033[1;33m2-1v1\033[0m, \033[1;34m3-1v2\033[0m, \033[1;35m4-1v3\033[0m, \033[1;36m5-1v4\033[0m\n";
+    const char *game_mode_prompt =
+        "\033[1;31mChoose game mode:\033[0m\n"
+        "    \033[1;32m1. PvE (Player vs Environment)\033[0m\n"
+        "    \033[1;33m2. 1v1 (Player vs Player)\033[0m\n"
+        "    \033[1;34m3. 1v2 (Player vs 2 Players)\033[0m\n"
+        "    \033[1;35m4. 1v3 (Player vs 3 Players)\033[0m\n"
+        "    \033[1;36m5. 1v4 (Player vs 4 Players)\033[0m\n\n"
+        "  Enter game mode ( \033[1;32m1\033[0m | \033[1;33m2\033[0m | \033[1;34m3\033[0m | \033[1;35m4\033[0m | \033[1;36m5\033[0m ): ";
     send(clientSocket, game_mode_prompt, strlen(game_mode_prompt), 0);
 
     char buffer[BUFFER_SIZE];
@@ -449,7 +509,7 @@ int main() {
             return 1;
         } else {
             // Enter player name for Player 1
-            send(clientSocket, "Enter your name: ", 18, 0);
+            send(clientSocket, "Enter your name (#1): ", 23, 0);
             bytesRead = recv(clientSocket, players[0].name, sizeof(players[0].name) - 1, 0);
             if (bytesRead > 0) {
                 players[0].name[bytesRead] = '\0'; // Null-terminate the string
@@ -491,7 +551,9 @@ int main() {
             printf("Player %d connected.\n", i + 1);
 
             // Enter player name for additional players
-            send(clientSocket, "Enter your name: ", 18, 0);
+            char name_prompt[50];
+            snprintf(name_prompt, sizeof(name_prompt), "Enter your name (#%d): ", i + 1);
+            send(clientSocket, name_prompt, strlen(name_prompt), 0);
             bytesRead = recv(clientSocket, players[player_count - 1].name, sizeof(players[player_count - 1].name) - 1, 0);
             if (bytesRead > 0) {
                 players[player_count - 1].name[bytesRead] = '\0'; // Null-terminate the string
@@ -516,7 +578,7 @@ int main() {
     // Initialize and fill the card stack with a new seed
     srand(time(NULL)); // Use the current time as the seed for the random number generator
     resetAndFillStack(&cardStack);
-    printStack(&cardStack);
+    printStack(&cardStack, player_count);
 
     // Reset player states at the start of the game
     reset_player_states(players, player_count);
@@ -529,6 +591,7 @@ int main() {
 
     // Deal initial cards
     deal_initial_cards(players, player_count, &dealer, &cardStack);
+    print_debug_info(&dealer, players, player_count);
 
     // Game loop
     for (int i = 0; i < player_count; i++) {
@@ -539,9 +602,11 @@ int main() {
     }
 
     // Dealer's turn
-    dealer_turn(&dealer, &cardStack);
+    dealer_turn(&dealer, &cardStack, players, player_count);
+    print_debug_info(&dealer, players, player_count); // Add here
 
     // Determine winners
+    print_debug_info(&dealer, players, player_count); // Add here
     determine_winners(players, player_count, &dealer);
 
     // Cleanup
