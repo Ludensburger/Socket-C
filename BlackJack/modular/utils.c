@@ -48,8 +48,6 @@ const char *getRandomColor() {
 
 void print_debug_info(Player *dealer, Player players[], int player_count) {
 
-    int debugCounter = 1;
-
     printf("\n----------- Debug Info %d -----------\n", debugCounter++); // Add this line
 
     // Show dealer's cards and score
@@ -77,7 +75,7 @@ void print_debug_info(Player *dealer, Player players[], int player_count) {
         }
         printf("\n\n");
     }
-    printf("-----------------------------------\n\n");
+    printf("------------------------------------\n\n");
 }
 
 void printBanner() {
