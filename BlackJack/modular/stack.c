@@ -69,9 +69,17 @@ void cleanStack(Stack *stack) {
     initializeStack(stack);
 }
 
-void printStack(Stack *stack) {
-    srand(time(NULL));     // Seed the random number generator
-    int cardPartition = 2; // Adjust the division of cards in the server if needed
+void printStack(Stack *stack, int player_count) {
+
+    // Seed the random number generator
+    srand(time(NULL));
+
+    // Adjust the division of cards in the server if needed
+    // can be set to be dynamic based on the number of players
+    // Example:
+    int cardPartition = player_count;
+    // int cardPartition = 2;
+
     for (int i = 0; i <= stack->top; i++) {
         if (i % 10 == 0 && i != 0) {
             printf("\n"); // Print a blank line for a new stack
