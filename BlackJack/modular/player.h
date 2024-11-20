@@ -16,7 +16,7 @@ typedef struct {
 } Player;
 
 void display_player_cards(Player *player);
-void calculate_score(Player *player);
+void calculate_score(Player *player, Player players[], int player_count, Player *dealer);
 void reset_player_states(Player players[], int player_count);
 
 #endif // PLAYER_H
