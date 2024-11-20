@@ -46,6 +46,40 @@ const char *getRandomColor() {
     return colors[rand() % num_colors];
 }
 
+void print_debug_info(Player *dealer, Player players[], int player_count) {
+
+    int debugCounter = 1;
+
+    printf("\n----------- Debug Info %d -----------\n", debugCounter++); // Add this line
+
+    // Show dealer's cards and score
+    printf("%s\n", DEALER_STRING); // Use the yellow colored dealer string
+    printf("Score: %d\n", dealer->score);
+    printf("Hand: ");
+    for (int i = 0; i < dealer->hand_size; i++) {
+        printf("%s", card_to_string(dealer->hand[i]));
+        if (i < dealer->hand_size - 1) {
+            printf(", ");
+        }
+    }
+    printf("\n\n");
+
+    // Show all players' cards
+    for (int i = 0; i < player_count; i++) {
+        printf("%s%s:\033[0m\n", players[i].color, players[i].name);
+        printf("Score: %d\n", players[i].score);
+        printf("Hand: ");
+        for (int j = 0; j < players[i].hand_size; j++) {
+            printf("%s", card_to_string(players[i].hand[j]));
+            if (j < players[i].hand_size - 1) {
+                printf(", ");
+            }
+        }
+        printf("\n\n");
+    }
+    printf("-----------------------------------\n\n");
+}
+
 void printBanner() {
     const char *orange = "\033[38;5;208m";
     const char *red = "\033[31m";
