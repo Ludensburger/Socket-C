@@ -17,6 +17,6 @@ void shuffleCards(int *cards, int size);
 void fillStack(Stack *stack);
 void resetAndFillStack(Stack *stack);
 void cleanStack(Stack *stack);
-void printStack(Stack *stack);
+void printStack(Stack *stack, int player_count);
 
 #endif // STACK_H
