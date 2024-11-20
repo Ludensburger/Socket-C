@@ -6,8 +6,8 @@
 
 #pragma comment(lib, "Ws2_32.lib")
 
-#define SERVER_IP "127.0.0.1" // Change to the server's IP address if needed
-#define PORT 8080
+#define SERVER_IP "192.168.1.1" // Change to the server's IP address if needed
+#define PORT 8080               // Change to the correct port if needed
 #define BUFFER_SIZE 1024
 
 const char *getColor(int choice) {
@@ -42,31 +42,36 @@ void printBanner() {
     const char *red = "\033[31m";
     const char *yellow = "\033[1;33m";
     const char *reset = "\033[0m";
+    const char *offSetTab = "\t\t\t";
 
-    const char *test1 = getRandomColor();
-    const char *test2 = getRandomColor();
+    const char *card1 = getRandomColor();
+    const char *card2 = getRandomColor();
 
-    while (test1 == test2) {
-        test2 = getRandomColor();
+    while (card1 == card2) {
+        card2 = getRandomColor();
     }
 
-    // printf("Test1 Color: %s\n", test1);
-    // printf("Test2 Color: %s\n", test2);
+    // printf("card1 Color: %s\n", card1);
+    // printf("card2 Color: %s\n", card2);
 
-    // printf("Test1 Color: %sTest1\033[0m\n", test1);
-    // printf("Test2 Color: %sTest2\033[0m\n", test2);
+    // printf("card1 Color: %scard1\033[0m\n", card1);
+    // printf("card2 Color: %scard2\033[0m\n", card2);
 
     // clear screen
     system("cls");
-
-    printf("   %s_____%s     %s_____%s\n", test1, reset, test2, reset);
-    printf("  %s|A    |%s   %s|K    |%s\n", test1, reset, test2, reset);
-    printf("  %s|     |%s   %s|     |%s\n", test1, reset, test2, reset);
-    printf("  %s|  ^  |%s   %s|  %%  |%s\n", test1, reset, test2, reset);
-    printf("  %s|     |%s   %s|     |%s\n", test1, reset, test2, reset);
-    printf("  %s|____A|%s   %s|____K|%s\n", test1, reset, test2, reset);
+    printf("%s", offSetTab);
+    printf("   %s_________%s     %s_________%s\n%s", card1, reset, card2, reset, offSetTab);
+    printf("  %s|A        |%s   %s|K        |%s\n%s", card1, reset, card2, reset, offSetTab);
+    printf("  %s|         |%s   %s|         |%s\n%s", card1, reset, card2, reset, offSetTab);
+    printf("  %s|         |%s   %s|         |%s\n%s", card1, reset, card2, reset), offSetTab;
+    printf("  %s|    ^    |%s   %s|    %%    |%s\n%s", card1, reset, card2, reset, offSetTab);
+    printf("  %s|         |%s   %s|         |%s\n%s", card1, reset, card2, reset, offSetTab);
+    printf("  %s|         |%s   %s|         |%s\n%s", card1, reset, card2, reset, offSetTab);
+    printf("  %s|________A|%s   %s|________K|%s\n%s", card1, reset, card2, reset, offSetTab);
     printf("      %sBlackJack%s\n", yellow, reset);
+    printf("      by Ryu Mendoza\n");
     // printf("      BlackJack\n");
+
     printf("\n");
 }
 
@@ -114,7 +119,7 @@ int main() {
     bytesRead = recv(clientSocket, buffer, BUFFER_SIZE, 0);
     if (bytesRead > 0) {
         buffer[bytesRead] = '\0'; // Null-terminate the string
-        printf("\nServer:\n%s\n", buffer);
+        printf("\nServer:\n%s\t", buffer);
 
         // Send game mode selection to server
         // printf("Pick from 1-5: ");
@@ -129,7 +134,7 @@ int main() {
     bytesRead = recv(clientSocket, buffer, BUFFER_SIZE, 0);
     if (bytesRead > 0) {
         buffer[bytesRead] = '\0'; // Null-terminate the string
-        printf("\nServer:\n%s\n", buffer);
+        printf("\nServer:\n%s \t", buffer);
 
         // Send player name to server
         fgets(buffer, BUFFER_SIZE, stdin);
