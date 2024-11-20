@@ -13,6 +13,7 @@
 
 // Define constants for the strings with colors
 const char *DEALER_STRING = "\033[1;33mDealer:\033[0m"; // Yellow color
+int debugCounter = 1;
 
 typedef struct {
     SOCKET socket;
@@ -119,8 +120,6 @@ const char *getRandomColor() {
 
 void print_debug_info(Player *dealer, Player players[], int player_count) {
 
-    int debugCounter = 1;
-
     printf("\n----------- Debug Info %d -----------\n", debugCounter++); // Add this line
 
     // Show dealer's cards and score
@@ -148,7 +147,7 @@ void print_debug_info(Player *dealer, Player players[], int player_count) {
         }
         printf("\n\n");
     }
-    printf("-----------------------------------\n\n");
+    printf("------------------------------------\n\n");
 }
 
 void calculate_score(Player *player, Player players[], int player_count, Player *dealer) {
