@@ -6,6 +6,7 @@
 #include "player.h" // Include the header file where Player is defined
 
 extern const char *DEALER_STRING;
+int debugCounter = 1;
 
 const char *card_to_string(int card);
 const char *getRandomColor();
