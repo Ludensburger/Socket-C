@@ -1,4 +1,6 @@
 #include "game_state.h"
+#include "player.h"
+#include "stack.h"
 #include "utils.h"
 #include <stdio.h>
 #include <string.h>
@@ -16,6 +18,14 @@ void deal_initial_cards(Player players[], int player_count, Player *dealer, Stac
     for (int j = 0; j < 2; j++) {
         dealer->hand[dealer->hand_size++] = pop(cardStack);
     }
+
+    // Calculate players' initial scores after dealing cards
+    for (int i = 0; i < player_count; i++) {
+        calculate_score(&players[i], players, player_count, dealer);
+    }
+
+    // Calculate dealer's score last
+    calculate_score(dealer, players, player_count, dealer);
 }
 
 void send_game_state(Player players[], int player_count, Player *dealer) {
@@ -71,7 +81,7 @@ void prompt_player_action(Player players[], int player_count, Player *player, Pl
         offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\nYour turn: hit or stand?\n");
 
         // Send the combined message to the player
-        calculate_score(player);
+        calculate_score(player, players, player_count, dealer); // Calculate score before prompting for action
         send(player->socket, buffer, strlen(buffer), 0);
 
         // Receive action from player
@@ -86,7 +96,9 @@ void prompt_player_action(Player players[], int player_count, Player *player, Pl
                     fillStack(cardStack);
                 }
                 player->hand[player->hand_size++] = pop(cardStack);
-                calculate_score(player); // Calculate score after dealing a new card
+                calculate_score(dealer, players, player_count, dealer); // Add this line
+                calculate_score(player, players, player_count, dealer);
+                print_debug_info(dealer, players, player_count);
 
                 // Combine updated game state and message
                 offset = 0;
@@ -114,7 +126,10 @@ void prompt_player_action(Player players[], int player_count, Player *player, Pl
                 send(player->socket, buffer, strlen(buffer), 0);
             } else if (strcmp(buffer, "stand") == 0) {
                 player->is_active = 0;
-                calculate_score(player); // Calculate final score after standing
+                calculate_score(dealer, players, player_count, dealer); // Add this line
+                calculate_score(player, players, player_count, dealer);
+                print_debug_info(dealer, players, player_count);
+
                 send(player->socket, "You chose to stand.\n", 20, 0);
             } else {
                 send(player->socket, "Invalid action. Please type 'hit' or 'stand'.\n", 45, 0);
@@ -126,13 +141,13 @@ void prompt_player_action(Player players[], int player_count, Player *player, Pl
     }
 }
 
-void dealer_turn(Player *dealer, Stack *cardStack) {
+void dealer_turn(Player *dealer, Stack *cardStack, Player players[], int player_count) {
     while (dealer->score < 17) {
         if (isEmpty(cardStack)) {
             fillStack(cardStack);
         }
         dealer->hand[dealer->hand_size++] = pop(cardStack);
-        calculate_score(dealer);
+        calculate_score(dealer, players, player_count, dealer);
     }
 }
 
