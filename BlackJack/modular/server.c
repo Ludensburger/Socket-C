@@ -164,7 +164,7 @@ int main() {
     // Initialize and fill the card stack with a new seed
     srand(time(NULL)); // Use the current time as the seed for the random number generator
     resetAndFillStack(&cardStack);
-    printStack(&cardStack);
+    printStack(&cardStack, player_count);
 
     // Reset player states at the start of the game
     reset_player_states(players, player_count);
@@ -187,7 +187,7 @@ int main() {
     }
 
     // Dealer's turn
-    dealer_turn(&dealer, &cardStack);
+    dealer_turn(&dealer, &cardStack, players, player_count);
 
     // Determine winners
     determine_winners(players, player_count, &dealer);
