@@ -120,7 +120,7 @@ const char *getRandomColor() {
 
 void print_debug_info(Player *dealer, Player players[], int player_count) {
 
-    printf("\n----------- Debug Info %d -----------\n", debugCounter++); // Add this line
+    printf("\n----------- Debug Info %d -----------\n", debugCounter++);
 
     // Show dealer's cards and score
     printf("%s\n", DEALER_STRING); // Use the yellow colored dealer string
@@ -306,7 +306,7 @@ void prompt_player_action(Player players[], int player_count, Player *player, Pl
                     fillStack(cardStack);
                 }
                 player->hand[player->hand_size++] = pop(cardStack);
-                calculate_score(dealer, players, player_count, dealer); // Add this line
+                calculate_score(dealer, players, player_count, dealer);
                 calculate_score(player, players, player_count, dealer);
                 print_debug_info(dealer, players, player_count);
 
@@ -336,7 +336,7 @@ void prompt_player_action(Player players[], int player_count, Player *player, Pl
                 send(player->socket, buffer, strlen(buffer), 0);
             } else if (strcmp(buffer, "stand") == 0) {
                 player->is_active = 0;
-                calculate_score(dealer, players, player_count, dealer); // Add this line
+                calculate_score(dealer, players, player_count, dealer);
                 calculate_score(player, players, player_count, dealer);
                 print_debug_info(dealer, players, player_count);
 
