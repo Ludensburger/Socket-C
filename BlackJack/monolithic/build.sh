@@ -16,7 +16,7 @@ gcc -o server-probabilistic server-probabilistic.c -lws2_32
 gcc -o easy server-easy.c -lws2_32
 
 # Probabilistic Mode
-gcc -0 smart server-probabilistic.c -lws2_32
+gcc -o smart server-probabilistic.c -lws2_32
 
 
 # Compile client.c with ws2_32 library
