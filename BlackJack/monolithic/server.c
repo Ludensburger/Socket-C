@@ -272,6 +272,7 @@ void prompt_player_action(Player players[], int player_count, Player *player, Pl
     int bytesRead;
 
     while (player->is_active) {
+
         // Combine game state and prompt into a single message
         int offset = 0;
         offset += snprintf(buffer + offset, sizeof(buffer) - offset, " %s", DEALER_STRING);
@@ -293,6 +294,9 @@ void prompt_player_action(Player players[], int player_count, Player *player, Pl
         // Send the combined message to the player
         calculate_score(player, players, player_count, dealer); // Calculate score before prompting for action
         send(player->socket, buffer, strlen(buffer), 0);
+
+        // Broadcast the game state to all players
+        send_game_state(players, player_count, dealer);
 
         // Receive action from player
         bytesRead = recv(player->socket, buffer, BUFFER_SIZE, 0);
