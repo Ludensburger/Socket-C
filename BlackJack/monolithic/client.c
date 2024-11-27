@@ -161,7 +161,11 @@ int main() {
 
                 // Send action to server
                 send(clientSocket, buffer, strlen(buffer), 0);
+            } else {
+                // Prompt players to wait
+                printf("Waiting for other players...\n");
             }
+
         } else if (bytesRead == 0) {
             printf("Connection closed by server.\n");
             break; // Exit loop if connection closed
