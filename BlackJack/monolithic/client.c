@@ -6,8 +6,11 @@
 
 #pragma comment(lib, "Ws2_32.lib")
 
+// #define SERVER_IP "192.168.1.1" // Change to the server's IP address if needed
+
 #define SERVER_IP "127.0.0.1" // Change to the server's IP address if needed
-#define PORT 8080             // Change to the correct port if needed
+
+#define PORT 8080 // Change to the correct port if needed
 #define BUFFER_SIZE 1024
 
 const char *getColor(int choice) {
@@ -51,6 +54,12 @@ void printBanner() {
         card2 = getRandomColor();
     }
 
+    // printf("card1 Color: %s\n", card1);
+    // printf("card2 Color: %s\n", card2);
+
+    // printf("card1 Color: %scard1\033[0m\n", card1);
+    // printf("card2 Color: %scard2\033[0m\n", card2);
+
     // clear screen
     system("cls");
     printf("%s", offSetTab);
@@ -63,7 +72,8 @@ void printBanner() {
     printf("  %s|         |%s   %s|         |%s\n%s", card1, reset, card2, reset, offSetTab);
     printf("  %s|________A|%s   %s|________K|%s\n%s", card1, reset, card2, reset, offSetTab);
     printf("      %sBlackJack%s\n", yellow, reset);
-    printf("          by Ryu Mendoza\n");
+    printf("      by Ryu Mendoza\n");
+    // printf("      BlackJack\n");
 
     printf("\n");
 }
@@ -74,20 +84,12 @@ void error_exit(const char *message) {
     exit(1);
 }
 
-// Helper method to convert a string to lowercase
-void to_lowercase(char *str) {
-    for (int i = 0; str[i]; i++) {
-        str[i] = tolower(str[i]);
-    }
-}
-
 int main() {
     WSADATA wsaData;
     SOCKET clientSocket;
     struct sockaddr_in serverAddr;
     char buffer[BUFFER_SIZE];
     int bytesRead;
-    int isPlayer1 = 0;
 
     // Seed the random number generator
     srand(time(NULL));
@@ -120,9 +122,10 @@ int main() {
     bytesRead = recv(clientSocket, buffer, BUFFER_SIZE, 0);
     if (bytesRead > 0) {
         buffer[bytesRead] = '\0'; // Null-terminate the string
-        printf("\nServer:\n%s", buffer);
+        printf("\nServer:\n%s\t", buffer);
 
         // Send game mode selection to server
+        // printf("Pick from 1-5: ");
         fgets(buffer, BUFFER_SIZE, stdin);
         buffer[strcspn(buffer, "\n")] = '\0'; // Remove newline character
         send(clientSocket, buffer, strlen(buffer), 0);
@@ -134,18 +137,12 @@ int main() {
     bytesRead = recv(clientSocket, buffer, BUFFER_SIZE, 0);
     if (bytesRead > 0) {
         buffer[bytesRead] = '\0'; // Null-terminate the string
-        printf("\nServer:\n%s", buffer);
+        printf("\nServer:\n%s \t", buffer);
 
         // Send player name to server
         fgets(buffer, BUFFER_SIZE, stdin);
         buffer[strcspn(buffer, "\n")] = '\0'; // Remove newline character
         send(clientSocket, buffer, strlen(buffer), 0);
-
-        // Check if this is player 1
-        if (strstr(buffer, "Enter your name (#1):") != NULL) {
-            isPlayer1 = 1;
-        }
-
     } else {
         error_exit("Failed to receive player name prompt from server");
     }
@@ -156,22 +153,14 @@ int main() {
         bytesRead = recv(clientSocket, buffer, BUFFER_SIZE, 0);
         if (bytesRead > 0) {
             buffer[bytesRead] = '\0'; // Null-terminate the string
-            printf("\nServer:\n%s", buffer);
-
-            // Add a delay to give the player time to see the game state
-            Sleep(1000); // Wait 1 second
+            printf("\nServer:\n%s\n", buffer);
 
             // Check if the server is prompting for an action
-            if (strstr(buffer, "\nYour turn: hit or stand?\nEnter your action (hit/stand): ") != NULL) {
-                // No need to print additional prompt since it's in server message
-                fflush(stdout);
-
-                // Get input on the same line
+            if (strstr(buffer, "Your turn: hit or stand?") != NULL) {
+                // Get player action
+                printf("Enter your action (hit/stand): ");
                 fgets(buffer, BUFFER_SIZE, stdin);
                 buffer[strcspn(buffer, "\n")] = '\0'; // Remove newline character
-
-                // Convert input to lowercase
-                to_lowercase(buffer);
 
                 // Send action to server
                 send(clientSocket, buffer, strlen(buffer), 0);
