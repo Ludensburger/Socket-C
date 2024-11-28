@@ -53,16 +53,15 @@ void printBanner() {
 
     // clear screen
     system("cls");
-    printf("%s", offSetTab);
-    printf("   %s_________%s     %s_________%s\n%s", card1, reset, card2, reset, offSetTab);
-    printf("  %s|A        |%s   %s|K        |%s\n%s", card1, reset, card2, reset, offSetTab);
-    printf("  %s|         |%s   %s|         |%s\n%s", card1, reset, card2, reset, offSetTab);
-    printf("  %s|         |%s   %s|         |%s\n%s", card1, reset, card2, reset), offSetTab;
-    printf("  %s|    ^    |%s   %s|    %%    |%s\n%s", card1, reset, card2, reset, offSetTab);
-    printf("  %s|         |%s   %s|         |%s\n%s", card1, reset, card2, reset, offSetTab);
-    printf("  %s|         |%s   %s|         |%s\n%s", card1, reset, card2, reset, offSetTab);
-    printf("  %s|________A|%s   %s|________K|%s\n%s", card1, reset, card2, reset, offSetTab);
-    printf("      %sBlackJack%s\n", yellow, reset);
+    printf("    %s_________%s     %s_________%s\n", card1, reset, card2, reset);
+    printf("   %s|A        |%s   %s|K        |%s\n", card1, reset, card2, reset);
+    printf("   %s|         |%s   %s|         |%s\n", card1, reset, card2, reset);
+    printf("   %s|         |%s   %s|         |%s\n", card1, reset, card2, reset);
+    printf("   %s|    ^    |%s   %s|    %%    |%s\n", card1, reset, card2, reset);
+    printf("   %s|         |%s   %s|         |%s\n", card1, reset, card2, reset);
+    printf("   %s|         |%s   %s|         |%s\n", card1, reset, card2, reset);
+    printf("   %s|________A|%s   %s|________K|%s\n", card1, reset, card2, reset);
+    printf("           %sBlackJack%s\n", yellow, reset);
     printf("\n");
 }
 
