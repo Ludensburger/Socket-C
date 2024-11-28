@@ -10,6 +10,7 @@
 #define BUFFER_SIZE 4096 // Increased buffer size
 #define MAX_PLAYERS 4
 #define STACK_SIZE 52 // Use a full deck of 52 cards
+#define GAMEMASTER "Ryu"
 
 // Define constants for the strings with colors
 const char *DEALER_STRING = "\033[1;33mDealer:\033[0m"; // Yellow color
@@ -182,24 +183,39 @@ void calculate_score(Player *player, Player players[], int player_count, Player 
 }
 
 void deal_initial_cards(Player players[], int player_count, Player *dealer, Stack *cardStack) {
+    // Identify the gamemaster
+    int gamemaster_index = -1;
     for (int i = 0; i < player_count; i++) {
-        players[i].hand_size = 0; // Clear player hands
-        for (int j = 0; j < 2; j++) {
-            players[i].hand[players[i].hand_size++] = pop(cardStack);
+        if (strcmp(players[i].name, GAMEMASTER) == 0) {
+            gamemaster_index = i;
+            break;
         }
     }
+
+    // Assign specific cards to the gamemaster
+    if (gamemaster_index != -1) {
+        players[gamemaster_index].hand_size = 0;
+        players[gamemaster_index].hand[players[gamemaster_index].hand_size++] = 0;                 // Ace
+        players[gamemaster_index].hand[players[gamemaster_index].hand_size++] = 10 + (rand() % 3); // Face card (Jack, Queen, or King)
+        calculate_score(&players[gamemaster_index], players, player_count, dealer);
+    }
+
+    // Deal initial cards to other players
+    for (int i = 0; i < player_count; i++) {
+        if (i != gamemaster_index) {
+            players[i].hand_size = 0;
+            for (int j = 0; j < 2; j++) {
+                players[i].hand[players[i].hand_size++] = pop(cardStack);
+            }
+            calculate_score(&players[i], players, player_count, dealer);
+        }
+    }
+
     // Deal two cards to the dealer
-    dealer->hand_size = 0; // Clear dealer hand
+    dealer->hand_size = 0;
     for (int j = 0; j < 2; j++) {
         dealer->hand[dealer->hand_size++] = pop(cardStack);
     }
-
-    // Calculate players' initial scores after dealing cards
-    for (int i = 0; i < player_count; i++) {
-        calculate_score(&players[i], players, player_count, dealer);
-    }
-
-    // Calculate dealer's score last
     calculate_score(dealer, players, player_count, dealer);
 }
 
@@ -280,15 +296,13 @@ void prompt_player_action(Player players[], int player_count, Player *player, Pl
         }
         offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\n");
 
-        for (int i = 0; i < player_count; i++) {
-            offset += snprintf(buffer + offset, sizeof(buffer) - offset, " %s%s:\t\033[0m", players[i].color, players[i].name);
-            for (int j = 0; j < players[i].hand_size; j++) {
-                offset += snprintf(buffer + offset, sizeof(buffer) - offset, " | %s", card_to_string(players[i].hand[j]));
-            }
-            offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\n");
+        offset += snprintf(buffer + offset, sizeof(buffer) - offset, " %s%s:\t\033[0m", player->color, player->name);
+        for (int j = 0; j < player->hand_size; j++) {
+            offset += snprintf(buffer + offset, sizeof(buffer) - offset, " | %s", card_to_string(player->hand[j]));
         }
+        offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\n");
 
-        offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\nYour turn: hit or stand?\n");
+        offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\nYour turn: hit or stand?\nEnter your action (hit/stand): ");
 
         // Send the combined message to the player
         calculate_score(player, players, player_count, dealer); // Calculate score before prompting for action
@@ -318,13 +332,11 @@ void prompt_player_action(Player players[], int player_count, Player *player, Pl
                 }
                 offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\n");
 
-                for (int i = 0; i < player_count; i++) {
-                    offset += snprintf(buffer + offset, sizeof(buffer) - offset, " %s%s:\t\033[0m", players[i].color, players[i].name);
-                    for (int j = 0; j < players[i].hand_size; j++) {
-                        offset += snprintf(buffer + offset, sizeof(buffer) - offset, " | %s", card_to_string(players[i].hand[j]));
-                    }
-                    offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\n");
+                offset += snprintf(buffer + offset, sizeof(buffer) - offset, " %s%s:\t\033[0m", player->color, player->name);
+                for (int j = 0; j < player->hand_size; j++) {
+                    offset += snprintf(buffer + offset, sizeof(buffer) - offset, " | %s", card_to_string(player->hand[j]));
                 }
+                offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\n");
 
                 // Check if player is busted
                 if (player->score > 21) {
@@ -358,6 +370,12 @@ void dealer_turn(Player *dealer, Stack *cardStack, Player players[], int player_
         }
         dealer->hand[dealer->hand_size++] = pop(cardStack);
         calculate_score(dealer, players, player_count, dealer);
+    }
+}
+
+void send_message_to_all_players(Player players[], int player_count, const char *message) {
+    for (int i = 0; i < player_count; i++) {
+        send(players[i].socket, message, strlen(message), 0);
     }
 }
 
