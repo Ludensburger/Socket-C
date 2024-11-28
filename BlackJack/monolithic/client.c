@@ -158,6 +158,9 @@ int main() {
             buffer[bytesRead] = '\0'; // Null-terminate the string
             printf("\nServer:\n%s", buffer);
 
+            // Add a delay to give the player time to see the game state
+            Sleep(1000); // Wait 1 second
+
             // Check if the server is prompting for an action
             if (strstr(buffer, "\nYour turn: hit or stand?\nEnter your action (hit/stand): ") != NULL) {
                 // No need to print additional prompt since it's in server message
