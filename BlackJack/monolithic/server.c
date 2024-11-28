@@ -283,6 +283,35 @@ void send_game_state(Player players[], int player_count, Player *dealer) {
     }
 }
 
+void send_final_game_state(Player players[], int player_count, Player *dealer) {
+    char buffer[BUFFER_SIZE]; // Increased buffer size
+    int offset = 0;
+
+    // Add dealer's cards to the buffer
+    offset += snprintf(buffer + offset, sizeof(buffer) - offset, " %s", DEALER_STRING);
+    for (int i = 0; i < dealer->hand_size; i++) {
+        offset += snprintf(buffer + offset, sizeof(buffer) - offset, " | %s", card_to_string(dealer->hand[i]));
+    }
+    offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\n");
+
+    // Add each player's cards to the buffer
+    for (int i = 0; i < player_count; i++) {
+        offset += snprintf(buffer + offset, sizeof(buffer) - offset, " %s%s:\t\033[0m", players[i].color, players[i].name);
+        for (int j = 0; j < players[i].hand_size; j++) {
+            offset += snprintf(buffer + offset, sizeof(buffer) - offset, " | %s", card_to_string(players[i].hand[j]));
+        }
+        offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\n");
+    }
+
+    // Null-terminate the buffer
+    buffer[offset] = '\0';
+
+    // Send the final game state to all players
+    for (int i = 0; i < player_count; i++) {
+        send(players[i].socket, buffer, strlen(buffer), 0);
+    }
+}
+
 void prompt_player_action(Player players[], int player_count, Player *player, Player *dealer, Stack *cardStack) {
     char buffer[BUFFER_SIZE]; // Increased buffer size
     int bytesRead;
@@ -467,6 +496,11 @@ void determine_winners(Player players[], int player_count, Player *dealer) {
                 }
             }
         }
+    }
+
+    // Send the final game state to all players
+    for (int i = 0; i < player_count; i++) {
+        send(players[i].socket, buffer, strlen(buffer), 0);
     }
 }
 
@@ -670,6 +704,9 @@ int main() {
     // Dealer's turn
     dealer_turn(&dealer, &cardStack, players, player_count);
     print_debug_info(&dealer, players, player_count); // Add here
+
+    // Send the final game state to all players
+    send_final_game_state(players, player_count, &dealer);
 
     // Determine winners
     print_debug_info(&dealer, players, player_count); // Add here
