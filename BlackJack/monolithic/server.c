@@ -432,6 +432,14 @@ const char *getGameBanner() {
     offset += snprintf(banner + offset, sizeof(banner) - offset, "   %s|________A|%s   %s|________K|%s\n", card1, reset, card2, reset);
     offset += snprintf(banner + offset, sizeof(banner) - offset, "           \033[1;33mBlackJack\033[0m\n\n");
 
+    // Add author name with random colors
+    offset += snprintf(banner + offset, sizeof(banner) - offset, "        ");
+    const char *name = "by Ryu Mendoza";
+    for (int i = 0; name[i] != '\0'; i++) {
+        offset += snprintf(banner + offset, sizeof(banner) - offset, "%s%c%s", getRandomColor(), name[i], reset);
+    }
+    offset += snprintf(banner + offset, sizeof(banner) - offset, "\n\n");
+
     return banner;
 }
 
