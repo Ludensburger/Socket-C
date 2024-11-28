@@ -61,7 +61,11 @@ void printBanner() {
     printf("   %s|         |%s   %s|         |%s\n", card1, reset, card2, reset);
     printf("   %s|         |%s   %s|         |%s\n", card1, reset, card2, reset);
     printf("   %s|________A|%s   %s|________K|%s\n", card1, reset, card2, reset);
-    printf("           %sBlackJack%s\n", yellow, reset);
+    printf("           %sBlackJack%s\n\n", yellow, reset);
+    const char *name = "        by Ryu Mendoza";
+    for (int i = 0; name[i] != '\0'; i++) {
+        printf("%s%c%s", getRandomColor(), name[i], reset);
+    }
     printf("\n");
 }
 
