@@ -389,16 +389,65 @@ void determine_winners(Player players[], int player_count, Player *dealer) {
         send(players[i].socket, buffer, strlen(buffer), 0);
     }
 
-    // Determine and send the result to each player
+    // Determine if any player has exactly 21
+    int winner_index = -1;
     for (int i = 0; i < player_count; i++) {
-        if (players[i].score > 21) {
-            send(players[i].socket, "\033[31mYou lost!\033[0m\n", 20, 0); // Red color
-        } else if (dealer->score > 21 || players[i].score > dealer->score) {
-            send(players[i].socket, "\033[36mYou won!\033[0m\n", 19, 0); // Cyan color
-        } else if (players[i].score == dealer->score) {
-            send(players[i].socket, "It's a tie!\n", 12, 0);
+        if (players[i].score == 21) {
+            winner_index = i;
+            break;
+        }
+    }
+
+    // If a player has exactly 21, they win
+    if (winner_index != -1) {
+        if (dealer->score == 21) {
+            // It's a tie between the dealer and the player
+            send_message_to_all_players(players, player_count, "\033[33mIt's a tie!\033[0m\n"); // Yellow color
         } else {
-            send(players[i].socket, "\033[31mYou lost!\033[0m\n", 20, 0); // Red color
+            for (int i = 0; i < player_count; i++) {
+                if (i == winner_index) {
+                    send(players[i].socket, "\033[36m\nYou won!\033[0m\n", 19, 0); // Cyan color
+                } else {
+                    // Show who won with name colored
+                    char message[BUFFER_SIZE];
+                    snprintf(message, sizeof(message), "%s%s won!\033[0m\n", players[winner_index].color, players[winner_index].name);
+                    send(players[i].socket, message, strlen(message), 0); // Winner's name in their color
+
+                    // Send "Better luck next time" message in yellow
+                    send(players[i].socket, "\033[33m\nBetter luck next time.\033[0m\n", 32, 0); // Yellow color
+                }
+            }
+        }
+    } else {
+        // Determine if the dealer wins
+        if (dealer->score <= 21) {
+            // Dealer wins, all players lose
+            send_message_to_all_players(players, player_count, "\033[31mDealer wins! You lost!\033[0m\n"); // Red color
+        } else {
+            // Determine the closest player to 21
+            int best_score = 0;
+            int closest_winner_index = -1;
+            for (int i = 0; i < player_count; i++) {
+                if (players[i].score <= 21 && players[i].score > best_score) {
+                    best_score = players[i].score;
+                    closest_winner_index = i;
+                }
+            }
+
+            // Send the result to each player
+            for (int i = 0; i < player_count; i++) {
+                if (i == closest_winner_index) {
+                    send(players[i].socket, "\033[36m\nYou won!\033[0m\n", 19, 0); // Cyan color
+                } else {
+                    // Show who won with name colored
+                    char message[BUFFER_SIZE];
+                    snprintf(message, sizeof(message), "%s%s won!\033[0m\n", players[closest_winner_index].color, players[closest_winner_index].name);
+                    send(players[i].socket, message, strlen(message), 0); // Winner's name in their color
+
+                    // Send "Better luck next time" message in yellow
+                    send(players[i].socket, "\033[33m\nBetter luck next time.\033[0m\n", 32, 0); // Yellow color
+                }
+            }
         }
     }
 }
