@@ -7,7 +7,10 @@
 #pragma comment(lib, "Ws2_32.lib")
 
 #define SERVER_IP "127.0.0.1" // Change to the server's IP address if needed
-#define PORT 8080             // Change to the correct port if needed
+// Change for multi-player with other computers
+// #define SERVER_IP "192.168.0.1"
+
+#define PORT 8080 // Change to the correct port if needed
 #define BUFFER_SIZE 1024
 
 const char *getColor(int choice) {
