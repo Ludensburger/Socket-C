@@ -51,6 +51,8 @@ void calculateAddresses(char *ip, char *subnet) {
     intToIp(network_addr, network_str);
     intToIp(broadcast_addr, broadcast_str);
 
+    printf("\n");
+
     printf("IP Address: %s\n", ip);
     printf("Subnet Mask: %s\n", subnet);
     printf("----------------------------------------\n");
