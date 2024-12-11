@@ -1,5 +1,8 @@
 /*
 
+    Author: Ryu Mendoza
+    Data Communication and Networking 1
+
     Overview:
     This program demonstrates a Many-to-One connection setup for socket programming.
     - One main server (also referred to as "Player 1" or "Primary Player") will host the session.
