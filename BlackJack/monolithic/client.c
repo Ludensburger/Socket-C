@@ -42,6 +42,16 @@
         2. Check that all devices are on the same network.
         3. Ensure firewalls or antivirus programs are not blocking the connection.
 
+
+    Build and Run Command:
+
+    cmd:
+    gcc addressFinder.c -liphlpapi -o addressFinder & addressFinder
+
+    shell:
+    gcc addressFinder.c -liphlpapi -o addressFinder; ./addressfinder.exe
+
+
 */
 
 #include <stdio.h>
