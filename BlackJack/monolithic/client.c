@@ -1,16 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-#include <winsock2.h>
-
-#pragma comment(lib, "Ws2_32.lib")
-
-#define SERVER_IP "127.0.0.1" // Change to the server's IP address if needed
-// Change for multi-player with other computers
-
-// #define SERVER_IP "192.168.0.1"
-
 /*
 
     Overview:
@@ -52,13 +39,20 @@
         2. Check that all devices are on the same network.
         3. Ensure firewalls or antivirus programs are not blocking the connection.
 
-
-
-
-
-
-
 */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include <winsock2.h>
+
+#pragma comment(lib, "Ws2_32.lib")
+
+#define SERVER_IP "127.0.0.1" // Change to the server's IP address if needed
+
+// Change for multi-player with other computers
+// #define SERVER_IP "192.168.0.1"
 
 #define PORT 8080 // Change to the correct port if needed
 #define BUFFER_SIZE 1024
