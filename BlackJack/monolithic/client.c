@@ -215,7 +215,8 @@ int main() {
 
             printBanner(); // Print the banner
 
-            printf("\nServer:\n%s", buffer);
+            // Display the received message
+            printf("\nFROM SERVER:\n%s", buffer);
 
             // Check if the server is prompting for an action
             if (strstr(buffer, "\nYour turn: hit or stand?\nEnter your action (hit/stand): ") != NULL) {
