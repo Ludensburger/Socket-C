@@ -237,7 +237,7 @@ void printStack(Stack *stack, int player_count) {
     printf("\n");
 }
 
-void send_game_state(Player players[], int player_count, Player *dealer) {
+void send_game_state(Player players[], int player_count, Player *dealer, int final) {
     char buffer[BUFFER_SIZE]; // Increased buffer size
     int offset = 0;
 
@@ -255,6 +255,18 @@ void send_game_state(Player players[], int player_count, Player *dealer) {
             offset += snprintf(buffer + offset, sizeof(buffer) - offset, " | %s", card_to_string(players[i].hand[j]));
         }
         offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\n");
+    }
+
+    if (final) {
+        // Add final scores with artistic formatting
+        offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\n\033[1;35m====================\033[0m\n");
+        offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\033[1;33m   Final Scores:\033[0m\n");
+        offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\033[1;35m====================\033[0m\n");
+        offset += snprintf(buffer + offset, sizeof(buffer) - offset, "%s %d\n", DEALER_STRING, dealer->score);
+        for (int i = 0; i < player_count; i++) {
+            offset += snprintf(buffer + offset, sizeof(buffer) - offset, "%s%s: %d\033[0m\n", players[i].color, players[i].name, players[i].score);
+        }
+        offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\033[1;35m====================\033[0m\n");
     }
 
     // Null-terminate the buffer
@@ -279,15 +291,13 @@ void prompt_player_action(Player players[], int player_count, Player *player, Pl
         }
         offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\n");
 
-        for (int i = 0; i < player_count; i++) {
-            offset += snprintf(buffer + offset, sizeof(buffer) - offset, " %s%s:\t\033[0m", players[i].color, players[i].name);
-            for (int j = 0; j < players[i].hand_size; j++) {
-                offset += snprintf(buffer + offset, sizeof(buffer) - offset, " | %s", card_to_string(players[i].hand[j]));
-            }
-            offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\n");
+        offset += snprintf(buffer + offset, sizeof(buffer) - offset, " %s%s:\t\033[0m", player->color, player->name);
+        for (int j = 0; j < player->hand_size; j++) {
+            offset += snprintf(buffer + offset, sizeof(buffer) - offset, " | %s", card_to_string(player->hand[j]));
         }
+        offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\n");
 
-        offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\nYour turn: hit or stand?\n");
+        offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\nYour turn: hit or stand?\nEnter your action (hit/stand): ");
 
         // Send the combined message to the player
         calculate_score(player); // Calculate score before prompting for action
@@ -305,7 +315,7 @@ void prompt_player_action(Player players[], int player_count, Player *player, Pl
                     fillStack(cardStack);
                 }
                 player->hand[player->hand_size++] = pop(cardStack);
-                calculate_score(dealer);
+                calculate_score(player);
                 calculate_score(player);
                 print_debug_info(dealer, players, player_count);
 
@@ -317,13 +327,11 @@ void prompt_player_action(Player players[], int player_count, Player *player, Pl
                 }
                 offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\n");
 
-                for (int i = 0; i < player_count; i++) {
-                    offset += snprintf(buffer + offset, sizeof(buffer) - offset, " %s%s:\t\033[0m", players[i].color, players[i].name);
-                    for (int j = 0; j < players[i].hand_size; j++) {
-                        offset += snprintf(buffer + offset, sizeof(buffer) - offset, " | %s", card_to_string(players[i].hand[j]));
-                    }
-                    offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\n");
+                offset += snprintf(buffer + offset, sizeof(buffer) - offset, " %s%s:\t\033[0m", player->color, player->name);
+                for (int j = 0; j < player->hand_size; j++) {
+                    offset += snprintf(buffer + offset, sizeof(buffer) - offset, " | %s", card_to_string(player->hand[j]));
                 }
+                offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\n");
 
                 // Check if player is busted
                 if (player->score > 21) {
@@ -335,7 +343,7 @@ void prompt_player_action(Player players[], int player_count, Player *player, Pl
                 send(player->socket, buffer, strlen(buffer), 0);
             } else if (strcmp(buffer, "stand") == 0) {
                 player->is_active = 0;
-                calculate_score(dealer);
+                calculate_score(player);
                 calculate_score(player);
                 print_debug_info(dealer, players, player_count);
 
@@ -396,45 +404,62 @@ void dealer_turn(Player *dealer, Stack *cardStack, Player players[], int player_
 }
 
 void determine_winners(Player players[], int player_count, Player *dealer) {
-    char buffer[BUFFER_SIZE]; // Increased buffer size
-    int offset = 0;
-
-    // Add dealer's cards to the buffer
-    offset += snprintf(buffer + offset, sizeof(buffer) - offset, " %s", DEALER_STRING);
-    for (int i = 0; i < dealer->hand_size; i++) {
-        offset += snprintf(buffer + offset, sizeof(buffer) - offset, " | %s", card_to_string(dealer->hand[i]));
-    }
-    offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\n");
-
-    // Add each player's cards to the buffer
+    // Clear screen first
+    const char *clear_screen = "\033[2J\033[H";
     for (int i = 0; i < player_count; i++) {
-        offset += snprintf(buffer + offset, sizeof(buffer) - offset, " %s%s:\t\033[0m", players[i].color, players[i].name);
-        for (int j = 0; j < players[i].hand_size; j++) {
-            offset += snprintf(buffer + offset, sizeof(buffer) - offset, " | %s", card_to_string(players[i].hand[j]));
-        }
-        offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\n");
+        send(players[i].socket, clear_screen, strlen(clear_screen), 0);
     }
-
-    // Null-terminate the buffer
-    buffer[offset] = '\0';
 
     // Send the final game state to all players
-    for (int i = 0; i < player_count; i++) {
-        send(players[i].socket, buffer, strlen(buffer), 0);
-    }
+    send_game_state(players, player_count, dealer, 1);
 
-    // Determine and send the result to each player
+    // Winner determination logic
+    int *winner_indices = (int *)malloc(player_count * sizeof(int));
+    int winner_count = 0;
+    int best_score = 0;
+
+    // Find players with 21 first
     for (int i = 0; i < player_count; i++) {
-        if (players[i].score > 21) {
-            send(players[i].socket, "\033[31mYou lost!\033[0m\n", 20, 0); // Red color
-        } else if (dealer->score > 21 || players[i].score > dealer->score) {
-            send(players[i].socket, "\033[36mYou won!\033[0m\n", 19, 0); // Cyan color
-        } else if (players[i].score == dealer->score) {
-            send(players[i].socket, "It's a tie!\n", 12, 0);
-        } else {
-            send(players[i].socket, "\033[31mYou lost!\033[0m\n", 20, 0); // Red color
+        if (players[i].score == 21) {
+            winner_indices[winner_count++] = i;
         }
     }
+
+    // If no one has 21, find highest valid score
+    if (winner_count == 0) {
+        for (int i = 0; i < player_count; i++) {
+            if (players[i].score <= 21 && players[i].score > best_score) {
+                best_score = players[i].score;
+            }
+        }
+        for (int i = 0; i < player_count; i++) {
+            if (players[i].score == best_score) {
+                winner_indices[winner_count++] = i;
+            }
+        }
+    }
+
+    // Send results to players
+    if (winner_count > 0) {
+        for (int i = 0; i < winner_count; i++) {
+            int winner_idx = winner_indices[i];
+
+            // Send personal win message to winner
+            send(players[winner_idx].socket, "\033[36m\nYou won!\033[0m\n", 19, 0);
+
+            // Send message to other players
+            for (int j = 0; j < player_count; j++) {
+                if (j != winner_idx) {
+                    char message[BUFFER_SIZE];
+                    snprintf(message, sizeof(message), "\n%s%s won!\033[0m\n", players[winner_idx].color, players[winner_idx].name);
+                    send(players[j].socket, message, strlen(message), 0);
+                    send(players[j].socket, "\033[33mBetter luck next time.\033[0m\n", 32, 0);
+                }
+            }
+        }
+    }
+
+    free(winner_indices);
 }
 
 void reset_player_states(Player players[], int player_count) {
@@ -521,8 +546,7 @@ int main() {
         "    \033[1;33m2. 1v1 (Player vs Player)\033[0m\n"
         "    \033[1;34m3. 1v2 (Player vs 2 Players)\033[0m\n"
         "    \033[1;35m4. 1v3 (Player vs 3 Players)\033[0m\n"
-        "    \033[1;36m5. 1v4 (Player vs 4 Players)\033[0m\n\n"
-        "  Enter game mode ( \033[1;32m1\033[0m | \033[1;33m2\033[0m | \033[1;34m3\033[0m | \033[1;35m4\033[0m | \033[1;36m5\033[0m ): ";
+        "  Enter game mode ( \033[1;32m1\033[0m | \033[1;33m2\033[0m | \033[1;34m3\033[0m | \033[1;35m4\033[0m ): ";
     send(clientSocket, game_mode_prompt, strlen(game_mode_prompt), 0);
 
     char buffer[BUFFER_SIZE];
@@ -534,7 +558,7 @@ int main() {
         printf("Game mode selected: %d\n", game_mode);
 
         // Validate the game mode
-        if (game_mode < 1 || game_mode > 5) {
+        if (game_mode < 1 || game_mode > 4) {
             printf("Invalid game mode. Exiting...\n");
             closesocket(clientSocket);
             closesocket(serverSocket);
