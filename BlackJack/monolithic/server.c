@@ -439,12 +439,15 @@ void send_game_state(Player players[], int player_count, Player *dealer, int fin
     }
 
     if (final) {
-        // Add final scores
-        offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\nFinal Scores:\n");
-        offset += snprintf(buffer + offset, sizeof(buffer) - offset, "Dealer: %d\n", dealer->score);
+        // Add final scores with artistic formatting
+        offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\n\033[1;35m====================\033[0m\n");
+        offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\033[1;33m   Final Scores:\033[0m\n");
+        offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\033[1;35m====================\033[0m\n");
+        offset += snprintf(buffer + offset, sizeof(buffer) - offset, "%s %d\n", DEALER_STRING, dealer->score);
         for (int i = 0; i < player_count; i++) {
             offset += snprintf(buffer + offset, sizeof(buffer) - offset, "%s%s: %d\033[0m\n", players[i].color, players[i].name, players[i].score);
         }
+        offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\033[1;35m====================\033[0m\n");
     }
 
     // Null-terminate the buffer
@@ -856,7 +859,7 @@ int main() {
         printf("Game mode selected: %d\n", game_mode);
 
         // Validate the game mode
-        if (game_mode < 1 || game_mode > 5) {
+        if (game_mode < 1 || game_mode > 4) {
             printf("Invalid game mode. Exiting...\n");
             closesocket(clientSocket);
             closesocket(serverSocket);
