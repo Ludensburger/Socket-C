@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Compile addressFinder.c with iphlpapi library
+gcc addressFinder.c -liphlpapi -o addressFinder
+
 # Compile server.c with ws2_32 library
 # Default server
 gcc -o server server.c -lws2_32
