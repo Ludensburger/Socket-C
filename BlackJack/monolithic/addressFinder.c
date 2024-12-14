@@ -41,6 +41,30 @@ void getLocalIp(char *buffer) {
     free(adapterInfo);
 }
 
+void getLocalSubnetMask(char *buffer) {
+    PIP_ADAPTER_INFO adapterInfo;
+    DWORD bufferSize = sizeof(IP_ADAPTER_INFO);
+    adapterInfo = (IP_ADAPTER_INFO *)malloc(bufferSize);
+
+    if (GetAdaptersInfo(adapterInfo, &bufferSize) == ERROR_BUFFER_OVERFLOW) {
+        free(adapterInfo);
+        adapterInfo = (IP_ADAPTER_INFO *)malloc(bufferSize);
+    }
+
+    if (GetAdaptersInfo(adapterInfo, &bufferSize) == NO_ERROR) {
+        PIP_ADAPTER_INFO adapter = adapterInfo;
+        while (adapter) {
+            if (adapter->Type == MIB_IF_TYPE_ETHERNET && adapter->IpAddressList.IpAddress.String[0] != '0') {
+                strcpy(buffer, adapter->IpAddressList.IpMask.String);
+                break;
+            }
+            adapter = adapter->Next;
+        }
+    }
+
+    free(adapterInfo);
+}
+
 void calculateAddresses(char *ip, char *subnet) {
     unsigned int ip_addr = ipToInt(ip);
     unsigned int subnet_mask = ipToInt(subnet);
@@ -121,6 +145,7 @@ int main() {
     printf("1. Manually Enter IP and Subnet Mask\n");
     printf("2. Use Default IP and Subnet Mask\n");
     printf("3. Use Local IP and Enter Subnet Mask\n");
+    printf("4. Use Local IP and Subnet Mask\n");
     printf("\n");
 
     printf("Op: ");
@@ -146,6 +171,11 @@ int main() {
         printf("Enter Subnet Mask: ");
         scanf("%15s", subnet);
 
+        break;
+
+    case 4:
+        getLocalIp(ip);
+        getLocalSubnetMask(subnet);
         break;
 
     case -1:
