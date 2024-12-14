@@ -65,7 +65,7 @@
 #define SERVER_IP "127.0.0.1" // Change to the server's IP address if needed
 
 // Change for multi-player with other computers
-// #define SERVER_IP "192.168.0.1"
+// #define SERVER_IP "193.193.193.161" // PC(161) to Laptop(162)
 
 #define PORT 8080 // Change to the correct port if needed
 #define BUFFER_SIZE 1024
@@ -245,7 +245,7 @@ int main() {
     closesocket(clientSocket);
     WSACleanup();
 
-    printf("%s\nGame Over.\n\n%s", getColor(0), "\033[0m");
+    printf("%s\n   Game Over.   \n\n%s", getColor(0), "\033[0m");
 
     // Wait for user input before exiting
     printf("\nPress Enter to exit...");
