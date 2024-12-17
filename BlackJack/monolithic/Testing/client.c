@@ -245,8 +245,11 @@ int main() {
     closesocket(clientSocket);
     WSACleanup();
 
-    printf("%s\n   Game Over.   \n\n%s", getColor(0), "\033[0m");
-
+    printf("%s\n   Game Over.   \n%s", getColor(0), "\033[0m");
+    // Remove excess newline characters from the buffer
+    for (int i = bytesRead - 1; i >= 0 && (buffer[i] == '\n' || buffer[i] == '\r'); i--) {
+        buffer[i] = '\0';
+    }
     // Wait for user input before exiting
     printf("\nPress Enter to exit...");
     getchar();
