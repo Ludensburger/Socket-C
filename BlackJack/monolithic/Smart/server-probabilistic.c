@@ -451,21 +451,36 @@ void determine_winners(Player players[], int player_count, Player *dealer) {
         }
     }
 
+    // Check if the dealer has a better score
+    if (dealer->score <= 21 && dealer->score > best_score) {
+        best_score = dealer->score;
+        winner_count = 0;
+        winner_indices[winner_count++] = -1; // Use -1 to indicate the dealer
+    }
+
     // Send results to players
     if (winner_count > 0) {
         for (int i = 0; i < winner_count; i++) {
             int winner_idx = winner_indices[i];
 
-            // Send personal win message to winner
-            send(players[winner_idx].socket, "\033[36m\nYou won!\033[0m\n", 19, 0);
+            if (winner_idx == -1) {
+                // Dealer wins
+                for (int j = 0; j < player_count; j++) {
+                    send(players[j].socket, "\033[31mDealer wins!\033[0m\n", 19, 0);
+                }
+            } else {
+                // Player wins
+                // Send personal win message to winner
+                send(players[winner_idx].socket, "\033[36m\nYou won!\033[0m\n", 19, 0);
 
-            // Send message to other players
-            for (int j = 0; j < player_count; j++) {
-                if (j != winner_idx) {
-                    char message[BUFFER_SIZE];
-                    snprintf(message, sizeof(message), "\n%s%s won!\033[0m\n", players[winner_idx].color, players[winner_idx].name);
-                    send(players[j].socket, message, strlen(message), 0);
-                    send(players[j].socket, "\033[33mBetter luck next time.\033[0m\n", 32, 0);
+                // Send message to other players
+                for (int j = 0; j < player_count; j++) {
+                    if (j != winner_idx) {
+                        char message[BUFFER_SIZE];
+                        snprintf(message, sizeof(message), "\n%s%s won!\033[0m\n", players[winner_idx].color, players[winner_idx].name);
+                        send(players[j].socket, message, strlen(message), 0);
+                        send(players[j].socket, "\033[33mBetter luck next time.\033[0m\n", 32, 0);
+                    }
                 }
             }
         }
@@ -527,6 +542,19 @@ int main() {
         WSACleanup();
         return 1;
     }
+
+    // Display a daring ang scary message to the player since this is an advance system capable of thinking its moves
+    system("cls");
+    printf("\033[1;31m");
+    printf("====================================================\n");
+    printf("||                                                ||\n");
+    printf("||   \033[1;33mPrepare to face the wrath of the machines!\033[1;31m   ||\n");
+    printf("||                                                ||\n");
+    printf("====================================================\n");
+    printf("||    \033[1;37mIn the grim darkness of the far future,  \033[1;31m   ||\n");
+    printf("||     \033[1;37mthere is only war... and \033[0;31mBlackJack!\033[1;31m        ||\n");
+    printf("====================================================\n");
+    printf("\033[0m");
 
     printf("Waiting for connections...\n");
 
