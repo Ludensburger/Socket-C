@@ -466,7 +466,7 @@ void determine_winners(Player players[], int player_count, Player *dealer) {
             if (winner_idx == -1) {
                 // Dealer wins
                 for (int j = 0; j < player_count; j++) {
-                    send(players[j].socket, "\033[31mDealer wins!\033[0m\n", 19, 0);
+                    send(players[j].socket, "\033[31mDealer wins!\033[0m\n", 24, 0);
                 }
             } else {
                 // Player wins
