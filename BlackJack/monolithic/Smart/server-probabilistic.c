@@ -79,18 +79,6 @@ void fillStack(Stack *stack) {
     }
 }
 
-void resetAndFillStack(Stack *stack) {
-    int cards[STACK_SIZE];
-    for (int i = 0; i < STACK_SIZE; i++) {
-        cards[i] = i; // Generate card values from 0 to 51
-    }
-    shuffleCards(cards, STACK_SIZE);
-    initializeStack(stack);
-    for (int i = 0; i < STACK_SIZE; i++) {
-        push(stack, cards[i]);
-    }
-}
-
 const char *card_to_string(int card) {
     static char buffer[64]; // Increased buffer size
     const char *values[] = {"Ace", "2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King"};
@@ -239,14 +227,11 @@ void printStack(Stack *stack, int player_count) {
 
 void send_game_state(Player players[], int player_count, Player *dealer, int final) {
     char buffer[BUFFER_SIZE]; // Increased buffer size
+
+    memset(buffer, 0, sizeof(buffer));
     int offset = 0;
 
-    // Add dealer's cards to the buffer
-    offset += snprintf(buffer + offset, sizeof(buffer) - offset, " %s", DEALER_STRING);
-    for (int i = 0; i < dealer->hand_size; i++) {
-        offset += snprintf(buffer + offset, sizeof(buffer) - offset, " | %s", card_to_string(dealer->hand[i]));
-    }
-    offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\n");
+    // offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\n");
 
     // Add each player's cards to the buffer
     for (int i = 0; i < player_count; i++) {
@@ -257,15 +242,24 @@ void send_game_state(Player players[], int player_count, Player *dealer, int fin
         offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\n");
     }
 
+    // Add dealer's cards to the buffer
+    offset += snprintf(buffer + offset, sizeof(buffer) - offset, " %s", DEALER_STRING);
+    for (int i = 0; i < dealer->hand_size; i++) {
+        offset += snprintf(buffer + offset, sizeof(buffer) - offset, " | %s", card_to_string(dealer->hand[i]));
+    }
+
     if (final) {
+
         // Add final scores with artistic formatting
+        offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\n");
+        offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\n");
         offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\n\033[1;35m====================\033[0m\n");
         offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\033[1;33m   Final Scores:\033[0m\n");
         offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\033[1;35m====================\033[0m\n");
-        offset += snprintf(buffer + offset, sizeof(buffer) - offset, "%s %d\n", DEALER_STRING, dealer->score);
         for (int i = 0; i < player_count; i++) {
             offset += snprintf(buffer + offset, sizeof(buffer) - offset, "%s%s: %d\033[0m\n", players[i].color, players[i].name, players[i].score);
         }
+        offset += snprintf(buffer + offset, sizeof(buffer) - offset, "%s %d\n", DEALER_STRING, dealer->score);
         offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\033[1;35m====================\033[0m\n");
     }
 
@@ -284,23 +278,41 @@ void prompt_player_action(Player players[], int player_count, Player *player, Pl
 
     while (player->is_active) {
         // Combine game state and prompt into a single message
+        memset(buffer, 0, sizeof(buffer));
         int offset = 0;
-        offset += snprintf(buffer + offset, sizeof(buffer) - offset, " %s", DEALER_STRING);
-        for (int i = 0; i < dealer->hand_size; i++) {
-            offset += snprintf(buffer + offset, sizeof(buffer) - offset, " | %s", card_to_string(dealer->hand[i]));
-        }
-        offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\n");
 
+        // Shows the player and their cards.
+        // Example:
+        // Player: | Ace of Spades | 2 of Hearts | etc...
         offset += snprintf(buffer + offset, sizeof(buffer) - offset, " %s%s:\t\033[0m", player->color, player->name);
         for (int j = 0; j < player->hand_size; j++) {
             offset += snprintf(buffer + offset, sizeof(buffer) - offset, " | %s", card_to_string(player->hand[j]));
         }
         offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\n");
 
+        // Shows Dealer Name
+        offset += snprintf(buffer + offset, sizeof(buffer) - offset, " %s", DEALER_STRING);
+
+        // Shows the Dealer's first card and a hidden card
+        if (dealer->hand_size > 0) {
+            offset += snprintf(buffer + offset, sizeof(buffer) - offset, " | %s", card_to_string(dealer->hand[0]));
+        }
+        offset += snprintf(buffer + offset, sizeof(buffer) - offset, " | [Hidden]\n"); // Hidden card
+
+        // Entire thing shows the Dealer and their cards.
+        // Example:
+        // Dealer: | Ace of Spades | 2 of Hearts | etc...
+        // FOR DEBUGGING PURPOSES
+        // for (int i = 0; i < dealer->hand_size; i++) {
+        //     offset += snprintf(buffer + offset, sizeof(buffer) - offset, " | %s", card_to_string(dealer->hand[i]));
+        // }
+        offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\n");
+
+        // Prompt the player to hit or stand
         offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\nYour turn: hit or stand?\nEnter your action (hit/stand): ");
 
         // Send the combined message to the player
-        calculate_score(player); // Calculate score before prompting for action
+        calculate_score(players); // Calculate score before prompting for action
         send(player->socket, buffer, strlen(buffer), 0);
 
         // Receive action from player
@@ -315,8 +327,8 @@ void prompt_player_action(Player players[], int player_count, Player *player, Pl
                     fillStack(cardStack);
                 }
                 player->hand[player->hand_size++] = pop(cardStack);
-                calculate_score(player);
-                calculate_score(player);
+                calculate_score(players);
+                calculate_score(players);
                 print_debug_info(dealer, players, player_count);
 
                 // Combine updated game state and message
@@ -343,8 +355,8 @@ void prompt_player_action(Player players[], int player_count, Player *player, Pl
                 send(player->socket, buffer, strlen(buffer), 0);
             } else if (strcmp(buffer, "stand") == 0) {
                 player->is_active = 0;
-                calculate_score(player);
-                calculate_score(player);
+                calculate_score(players);
+                calculate_score(players);
                 print_debug_info(dealer, players, player_count);
 
                 send(player->socket, "You chose to stand.\n", 20, 0);
@@ -634,7 +646,7 @@ int main() {
 
     // Initialize and fill the card stack with a new seed
     srand(time(NULL)); // Use the current time as the seed for the random number generator
-    resetAndFillStack(&cardStack);
+    fillStack(&cardStack);
     printStack(&cardStack, player_count);
 
     // Reset player states at the start of the game
