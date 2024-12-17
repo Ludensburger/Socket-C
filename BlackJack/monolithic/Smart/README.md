@@ -4,6 +4,10 @@
 
 This program demonstrates a Many-to-One connection setup for socket programming. One main server (also referred to as "Player 1" or "Primary Player") will host the session. Multiple clients (other computers) will connect to the server using their IP addresses.
 
+## Smart Algorithm
+
+The program incorporates a smart algorithm for the dealer's decision-making process in BlackJack. The dealer uses a probabilistic model to decide whether to hit or stand based on its current score and the visible scores of the players. This adds an element of strategy and intelligence to the game, making it more challenging and engaging for the players.
+
 ## Requirements
 
 1. The **host machine** (server) must set its IPV4 address as the `SERVER_IP`.
