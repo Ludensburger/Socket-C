@@ -9,8 +9,10 @@ typedef struct {
     int hand[10];
     int hand_size;
     int score;
+    int wallet;
+    int current_bet;
     int is_active;
-    char color[10];
+    char color[20];  // Increased from 10 to 20 to handle longer ANSI codes
 } Player;
 
 void display_player_cards(Player *player);

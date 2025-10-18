@@ -12,11 +12,12 @@ const char *card_to_string(int card) {
     static char buffer[64];
     const char *values[] = {"Ace", "2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King"};
     const char *suits[] = {"Spades", "Hearts", "Diamonds", "Clubs"};
-    const char *colors[] = {"\033[38;5;208m", "\033[31m", "\033[36m", "\033[92m"}; // Orange, Red, Cyan, Light Green
- 
+    // IMPORTANT: Use only simple color codes WITHOUT semicolons to avoid protocol parsing issues
+    const char *colors[] = {"\033[90m", "\033[31m", "\033[36m", "\033[32m"}; // Gray, Red, Cyan, Green
+
     int value_index = card % 13;
     int suit_index = card / 13;
- 
+
     snprintf(buffer, sizeof(buffer), "%s%s of %s\033[0m", colors[suit_index], values[value_index], suits[suit_index]);
     return buffer;
 }
