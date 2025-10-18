@@ -1,34 +1,39 @@
 #include "game_state.h"
 #include "utils.h"
+#include "server_utils.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <winsock2.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <errno.h>
 
 #define PORT 8080
 
 int main() {
-    WSADATA wsaData;
-    SOCKET serverSocket, clientSocket;
+    int serverSocket, clientSocket;
     struct sockaddr_in serverAddr, clientAddr;
-    int addrLen = sizeof(clientAddr);
+    socklen_t addrLen = sizeof(clientAddr);
     Player players[MAX_PLAYERS];
     int player_count = 0;
     Stack cardStack;
     int game_mode = 0;
 
-    // Initialize Winsock
-    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
-        printf("Failed to initialize Winsock. Error Code: %d\n", WSAGetLastError());
+    // Create socket
+    serverSocket = socket(AF_INET, SOCK_STREAM, 0);
+    if (serverSocket < 0) {
+        perror("Socket creation failed");
         return 1;
     }
 
-    // Create socket
-    serverSocket = socket(AF_INET, SOCK_STREAM, 0);
-    if (serverSocket == INVALID_SOCKET) {
-        printf("Socket creation failed. Error Code: %d\n", WSAGetLastError());
-        WSACleanup();
+    // Allow the socket to be reused immediately after it's closed
+    int opt = 1;
+    if (setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) {
+        perror("setsockopt failed");
+        close(serverSocket);
         return 1;
     }
 
@@ -38,18 +43,16 @@ int main() {
     serverAddr.sin_port = htons(PORT);
 
     // Bind the socket
-    if (bind(serverSocket, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
-        printf("Bind failed. Error Code: %d\n", WSAGetLastError());
-        closesocket(serverSocket);
-        WSACleanup();
+    if (bind(serverSocket, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0) {
+        perror("Bind failed");
+        close(serverSocket);
         return 1;
     }
 
     // Listen for incoming connections
-    if (listen(serverSocket, MAX_PLAYERS) == SOCKET_ERROR) {
-        printf("Listen failed. Error Code: %d\n", WSAGetLastError());
-        closesocket(serverSocket);
-        WSACleanup();
+    if (listen(serverSocket, MAX_PLAYERS) < 0) {
+        perror("Listen failed");
+        close(serverSocket);
         return 1;
     }
 
@@ -57,10 +60,9 @@ int main() {
 
     // Accept the first player connection
     clientSocket = accept(serverSocket, (struct sockaddr *)&clientAddr, &addrLen);
-    if (clientSocket == INVALID_SOCKET) {
-        printf("Accept failed. Error Code: %d\n", WSAGetLastError());
-        closesocket(serverSocket);
-        WSACleanup();
+    if (clientSocket < 0) {
+        perror("Accept failed");
+        close(serverSocket);
         return 1;
     }
 
@@ -91,9 +93,8 @@ int main() {
         // Validate the game mode
         if (game_mode < 1 || game_mode > 5) {
             printf("Invalid game mode. Exiting...\n");
-            closesocket(clientSocket);
-            closesocket(serverSocket);
-            WSACleanup();
+            close(clientSocket);
+            close(serverSocket);
             return 1;
         } else {
             // Enter player name for Player 1
@@ -103,10 +104,9 @@ int main() {
                 players[0].name[bytesRead] = '\0'; // Null-terminate the string
                 printf("Player 1 name: %s\n", players[0].name);
             } else {
-                printf("recv failed: %d\n", WSAGetLastError());
-                closesocket(clientSocket);
-                closesocket(serverSocket);
-                WSACleanup();
+                perror("recv failed for player 1 name");
+                close(clientSocket);
+                close(serverSocket);
                 return 1;
             }
         }
@@ -116,10 +116,9 @@ int main() {
         // Accept additional player connections if needed
         for (int i = 1; i < required_players; i++) {
             clientSocket = accept(serverSocket, (struct sockaddr *)&clientAddr, &addrLen);
-            if (clientSocket == INVALID_SOCKET) {
-                printf("Accept failed. Error Code: %d\n", WSAGetLastError());
-                closesocket(serverSocket);
-                WSACleanup();
+            if (clientSocket < 0) {
+                perror("Accept failed for additional player");
+                close(serverSocket);
                 return 1;
             }
 
@@ -145,59 +144,79 @@ int main() {
                 players[player_count - 1].name[bytesRead] = '\0'; // Null-terminate the string
                 printf("Player %d name: %s\n", i + 1, players[player_count - 1].name);
             } else {
-                printf("recv failed: %d\n", WSAGetLastError());
-                closesocket(clientSocket);
-                closesocket(serverSocket);
-                WSACleanup();
+                perror("recv failed for additional player name");
+                close(clientSocket);
+                close(serverSocket);
                 return 1;
             }
         }
 
     } else {
-        printf("recv failed: %d\n", WSAGetLastError());
-        closesocket(clientSocket);
-        closesocket(serverSocket);
-        WSACleanup();
+        perror("recv failed for game mode");
+        close(clientSocket);
+        close(serverSocket);
         return 1;
     }
 
-    // Initialize and fill the card stack with a new seed
-    srand(time(NULL)); // Use the current time as the seed for the random number generator
-    resetAndFillStack(&cardStack);
-    printStack(&cardStack, player_count);
+    int play_again = 1;
+    while (play_again) {
+        // Initialize and fill the card stack with a new seed
+        srand(time(NULL)); // Use the current time as the seed for the random number generator
+        resetAndFillStack(&cardStack);
+        printStack(&cardStack, player_count);
 
-    // Reset player states at the start of the game
-    reset_player_states(players, player_count);
+        // Reset player states at the start of the game
+        reset_player_states(players, player_count);
 
-    // Initialize dealer
-    Player dealer;
-    dealer.hand_size = 0;
-    dealer.score = 0;
-    dealer.is_active = 1;
+        // Initialize dealer
+        Player dealer;
+        dealer.hand_size = 0;
+        dealer.score = 0;
+        dealer.is_active = 1;
 
-    // Deal initial cards
-    deal_initial_cards(players, player_count, &dealer, &cardStack);
+        // Deal initial cards
+        deal_initial_cards(players, player_count, &dealer, &cardStack);
 
-    // Game loop
-    for (int i = 0; i < player_count; i++) {
-        if (players[i].is_active) {
-            display_player_cards(&players[i]);
-            prompt_player_action(players, player_count, &players[i], &dealer, &cardStack);
+        // Print the deck state *after* initial cards have been dealt for an accurate log
+        printStack(&cardStack, player_count);
+
+        // Send only the "NEW_ROUND" signal to all clients
+        for (int i = 0; i < player_count; i++) {
+            send(players[i].socket, "NEW_ROUND", 9, 0);
+        }
+
+        // Player turns
+        for (int i = 0; i < player_count; i++) {
+            if (players[i].is_active) {
+                // Display the dynamic server-side game state
+                display_server_gamestate(&players[i], &cardStack);
+                prompt_player_action(players, player_count, &players[i], &dealer, &cardStack);
+            }
+        }
+
+        // Dealer's turn
+        dealer_turn(&dealer, &cardStack, players, player_count);
+        print_debug_info(&dealer, players, player_count); // Add final debug info after dealer's turn
+
+        // Determine winners
+        determine_winners(players, player_count, &dealer);
+
+        bytesRead = recv(players[0].socket, buffer, BUFFER_SIZE, 0);
+        if (bytesRead > 0) {
+            buffer[bytesRead] = '\0';
+            if (strcmp(buffer, "no") == 0) {
+                play_again = 0;
+            }
+        } else {
+            play_again = 0; // End game if player 1 disconnects
         }
     }
 
-    // Dealer's turn
-    dealer_turn(&dealer, &cardStack, players, player_count);
-
-    // Determine winners
-    determine_winners(players, player_count, &dealer);
-
     // Cleanup
     for (int i = 0; i < player_count; i++) {
-        closesocket(players[i].socket);
+        close(players[i].socket);
     }
-    closesocket(serverSocket);
-    WSACleanup();
+    close(serverSocket);
 
     // Clean the stack at the end of the game
     cleanStack(&cardStack);

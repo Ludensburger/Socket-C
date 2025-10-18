@@ -2,9 +2,11 @@
 #include "player.h"
 #include "stack.h"
 #include "utils.h"
+#include "server_utils.h"
+#include <errno.h>
 #include <stdio.h>
 #include <string.h>
-#include <winsock2.h>
+#include <sys/socket.h>
 
 void deal_initial_cards(Player players[], int player_count, Player *dealer, Stack *cardStack) {
     for (int i = 0; i < player_count; i++) {
@@ -28,28 +30,31 @@ void deal_initial_cards(Player players[], int player_count, Player *dealer, Stac
     calculate_score(dealer, players, player_count, dealer);
 }
 
-void send_game_state(Player players[], int player_count, Player *dealer) {
-    char buffer[BUFFER_SIZE]; // Increased buffer size
+// Helper function to build the game state string
+int build_game_state_string(char *buffer, size_t buffer_size, Player players[], int player_count, Player *dealer) {
     int offset = 0;
 
     // Add dealer's cards to the buffer
-    offset += snprintf(buffer + offset, sizeof(buffer) - offset, " %s", DEALER_STRING);
+    offset += snprintf(buffer + offset, buffer_size - offset, " %s", DEALER_STRING);
     for (int i = 0; i < dealer->hand_size; i++) {
-        offset += snprintf(buffer + offset, sizeof(buffer) - offset, " | %s", card_to_string(dealer->hand[i]));
+        offset += snprintf(buffer + offset, buffer_size - offset, " | %s", card_to_string(dealer->hand[i]));
     }
-    offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\n");
+    offset += snprintf(buffer + offset, buffer_size - offset, "\n");
 
     // Add each player's cards to the buffer
     for (int i = 0; i < player_count; i++) {
-        offset += snprintf(buffer + offset, sizeof(buffer) - offset, " %s%s:\t\033[0m", players[i].color, players[i].name);
+        offset += snprintf(buffer + offset, buffer_size - offset, " %s%s:\t\033[0m", players[i].color, players[i].name);
         for (int j = 0; j < players[i].hand_size; j++) {
-            offset += snprintf(buffer + offset, sizeof(buffer) - offset, " | %s", card_to_string(players[i].hand[j]));
+            offset += snprintf(buffer + offset, buffer_size - offset, " | %s", card_to_string(players[i].hand[j]));
         }
-        offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\n");
+        offset += snprintf(buffer + offset, buffer_size - offset, "\n");
     }
+    return offset;
+}
 
-    // Null-terminate the buffer
-    buffer[offset] = '\0';
+void send_game_state(Player players[], int player_count, Player *dealer) {
+    char buffer[BUFFER_SIZE];
+    build_game_state_string(buffer, sizeof(buffer), players, player_count, dealer);
 
     // Send the game state to all players
     for (int i = 0; i < player_count; i++) {
@@ -58,30 +63,23 @@ void send_game_state(Player players[], int player_count, Player *dealer) {
 }
 
 void prompt_player_action(Player players[], int player_count, Player *player, Player *dealer, Stack *cardStack) {
-    char buffer[BUFFER_SIZE]; // Increased buffer size
+    char buffer[BUFFER_SIZE];
     int bytesRead;
 
     while (player->is_active) {
         // Combine game state and prompt into a single message
         int offset = 0;
-        offset += snprintf(buffer + offset, sizeof(buffer) - offset, " %s", DEALER_STRING);
-        for (int i = 0; i < dealer->hand_size; i++) {
-            offset += snprintf(buffer + offset, sizeof(buffer) - offset, " | %s", card_to_string(dealer->hand[i]));
-        }
-        offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\n");
+        calculate_score(player, players, player_count, dealer); // Calculate score before prompting
 
-        for (int i = 0; i < player_count; i++) {
-            offset += snprintf(buffer + offset, sizeof(buffer) - offset, " %s%s:\t\033[0m", players[i].color, players[i].name);
-            for (int j = 0; j < players[i].hand_size; j++) {
-                offset += snprintf(buffer + offset, sizeof(buffer) - offset, " | %s", card_to_string(players[i].hand[j]));
-            }
-            offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\n");
+        if (player->score > 21) {
+            player->is_active = 0; // Player is busted, break the loop
+            break;
         }
 
+        offset = build_game_state_string(buffer, sizeof(buffer), players, player_count, dealer);
         offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\nYour turn: hit or stand?\n");
 
         // Send the combined message to the player
-        calculate_score(player, players, player_count, dealer); // Calculate score before prompting for action
         send(player->socket, buffer, strlen(buffer), 0);
 
         // Receive action from player
@@ -96,48 +94,31 @@ void prompt_player_action(Player players[], int player_count, Player *player, Pl
                     fillStack(cardStack);
                 }
                 player->hand[player->hand_size++] = pop(cardStack);
-                calculate_score(dealer, players, player_count, dealer); // Add this line
                 calculate_score(player, players, player_count, dealer);
                 print_debug_info(dealer, players, player_count);
 
-                // Combine updated game state and message
-                offset = 0;
-                offset += snprintf(buffer + offset, sizeof(buffer) - offset, " %s", DEALER_STRING);
-                for (int i = 0; i < dealer->hand_size; i++) {
-                    offset += snprintf(buffer + offset, sizeof(buffer) - offset, " | %s", card_to_string(dealer->hand[i]));
-                }
-                offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\n");
+                // Re-display the server gamestate after a hit
+                display_server_gamestate(player, cardStack);
 
-                for (int i = 0; i < player_count; i++) {
-                    offset += snprintf(buffer + offset, sizeof(buffer) - offset, " %s%s:\t\033[0m", players[i].color, players[i].name);
-                    for (int j = 0; j < players[i].hand_size; j++) {
-                        offset += snprintf(buffer + offset, sizeof(buffer) - offset, " | %s", card_to_string(players[i].hand[j]));
-                    }
-                    offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\n");
-                }
-
-                // Check if player is busted
-                if (player->score > 21) {
-                    offset += snprintf(buffer + offset, sizeof(buffer) - offset, "You are busted!\n");
-                    player->is_active = 0;
-                }
-
-                // Send the updated game state and message to the player
-                send(player->socket, buffer, strlen(buffer), 0);
             } else if (strcmp(buffer, "stand") == 0) {
                 player->is_active = 0;
-                calculate_score(dealer, players, player_count, dealer); // Add this line
-                calculate_score(player, players, player_count, dealer);
                 print_debug_info(dealer, players, player_count);
-
-                send(player->socket, "You chose to stand.\n", 20, 0);
             } else {
                 send(player->socket, "Invalid action. Please type 'hit' or 'stand'.\n", 45, 0);
             }
-        } else {
-            printf("recv failed: %d\n", WSAGetLastError());
+        } else if (bytesRead <= 0) {
+            // Handle player disconnect
+            printf("Player %s disconnected. recv failed: %s\n", player->name, strerror(errno));
             player->is_active = 0;
         }
+    }
+
+    // If the player busted, inform them.
+    if (player->score > 21) {
+        char busted_buffer[BUFFER_SIZE];
+        int offset = build_game_state_string(busted_buffer, sizeof(busted_buffer), players, player_count, dealer);
+        offset += snprintf(busted_buffer + offset, sizeof(busted_buffer) - offset, "You are busted!\n");
+        send(player->socket, busted_buffer, strlen(busted_buffer), 0);
     }
 }
 
@@ -152,43 +133,29 @@ void dealer_turn(Player *dealer, Stack *cardStack, Player players[], int player_
 }
 
 void determine_winners(Player players[], int player_count, Player *dealer) {
-    char buffer[BUFFER_SIZE]; // Increased buffer size
-    int offset = 0;
-
-    // Add dealer's cards to the buffer
-    offset += snprintf(buffer + offset, sizeof(buffer) - offset, " %s", DEALER_STRING);
-    for (int i = 0; i < dealer->hand_size; i++) {
-        offset += snprintf(buffer + offset, sizeof(buffer) - offset, " | %s", card_to_string(dealer->hand[i]));
-    }
-    offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\n");
-
-    // Add each player's cards to the buffer
-    for (int i = 0; i < player_count; i++) {
-        offset += snprintf(buffer + offset, sizeof(buffer) - offset, " %s%s:\t\033[0m", players[i].color, players[i].name);
-        for (int j = 0; j < players[i].hand_size; j++) {
-            offset += snprintf(buffer + offset, sizeof(buffer) - offset, " | %s", card_to_string(players[i].hand[j]));
-        }
-        offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\n");
-    }
-
-    // Null-terminate the buffer
-    buffer[offset] = '\0';
-
-    // Send the final game state to all players
-    for (int i = 0; i < player_count; i++) {
-        send(players[i].socket, buffer, strlen(buffer), 0);
-    }
-
     // Determine and send the result to each player
     for (int i = 0; i < player_count; i++) {
+        char final_buffer[BUFFER_SIZE];
+        int offset = 0;
+
+        // Build the final game state string first
+        offset = build_game_state_string(final_buffer, sizeof(final_buffer), players, player_count, dealer);
+
+        // Append the result message to the same buffer
         if (players[i].score > 21) {
-            send(players[i].socket, "\033[31mYou lost!\033[0m\n", 20, 0); // Red color
+            offset += snprintf(final_buffer + offset, sizeof(final_buffer) - offset, "\033[31mYou lost!\033[0m\n"); // Red color
         } else if (dealer->score > 21 || players[i].score > dealer->score) {
-            send(players[i].socket, "\033[36mYou won!\033[0m\n", 19, 0); // Cyan color
+            offset += snprintf(final_buffer + offset, sizeof(final_buffer) - offset, "\033[36mYou won!\033[0m\n"); // Cyan color
         } else if (players[i].score == dealer->score) {
-            send(players[i].socket, "It's a tie!\n", 12, 0);
+            offset += snprintf(final_buffer + offset, sizeof(final_buffer) - offset, "It's a tie!\n");
         } else {
-            send(players[i].socket, "\033[31mYou lost!\033[0m\n", 20, 0); // Red color
+            offset += snprintf(final_buffer + offset, sizeof(final_buffer) - offset, "\033[31mYou lost!\033[0m\n"); // Red color
         }
+
+        // Append the "Play again?" prompt to the same buffer
+        offset += snprintf(final_buffer + offset, sizeof(final_buffer) - offset, "\nPlay again? (yes/no): ");
+
+        // Send the single, consolidated message
+        send(players[i].socket, final_buffer, strlen(final_buffer), 0);
     }
 }

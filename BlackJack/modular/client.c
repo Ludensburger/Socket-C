@@ -3,15 +3,39 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <winsock2.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <ctype.h>
 
 #define PORT 8080
 #define BUFFER_SIZE 4096      // Increased buffer size
-#define SERVER_IP "127.0.0.1" // Change to the server's IP address if needed
+#define SERVER_IP "127.0.0.1" // Use this for local play
+
+// Helper function to convert a string to lowercase for case-insensitive comparison
+void to_lowercase(char *str) {
+    for (int i = 0; str[i]; i++) {
+        str[i] = tolower(str[i]);
+    }
+}
+
+// Function to get and validate user input for actions
+void get_validated_input(char *buffer, size_t size) {
+    while (1) {
+        fgets(buffer, size, stdin);
+        buffer[strcspn(buffer, "\n")] = '\0'; // Remove newline
+        to_lowercase(buffer);
+
+        if (strcmp(buffer, "hit") == 0 || strcmp(buffer, "stand") == 0) {
+            return; // Valid input
+        }
+        printf("Invalid input. Please enter 'hit' or 'stand': ");
+    }
+}
 
 int main() {
-    WSADATA wsaData;
-    SOCKET clientSocket;
+    int clientSocket;
     struct sockaddr_in serverAddr;
     char buffer[BUFFER_SIZE];
     int bytesRead;
@@ -19,14 +43,9 @@ int main() {
     // Seed the random number generator
     srand(time(NULL));
 
-    // Initialize Winsock
-    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
-        error_exit("Failed to initialize Winsock");
-    }
-
     // Create socket
     clientSocket = socket(AF_INET, SOCK_STREAM, 0);
-    if (clientSocket == INVALID_SOCKET) {
+    if (clientSocket < 0) {
         error_exit("Socket creation failed");
     }
 
@@ -36,7 +55,7 @@ int main() {
     serverAddr.sin_port = htons(PORT);
 
     // Connect to server
-    if (connect(clientSocket, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
+    if (connect(clientSocket, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0) {
         error_exit("Connection to server failed");
     }
 
@@ -47,7 +66,7 @@ int main() {
     bytesRead = recv(clientSocket, buffer, BUFFER_SIZE, 0);
     if (bytesRead > 0) {
         buffer[bytesRead] = '\0'; // Null-terminate the string
-        printf("\nServer:\n%s\n", buffer);
+        printf("\nServer:\n%s", buffer);
 
         // Send game mode selection to server
         // printf("Pick from 1-5: ");
@@ -62,7 +81,7 @@ int main() {
     bytesRead = recv(clientSocket, buffer, BUFFER_SIZE, 0);
     if (bytesRead > 0) {
         buffer[bytesRead] = '\0'; // Null-terminate the string
-        printf("\nServer:\n%s\n", buffer);
+        printf("\nServer:\n%s", buffer);
 
         // Send player name to server
         fgets(buffer, BUFFER_SIZE, stdin);
@@ -78,17 +97,37 @@ int main() {
         bytesRead = recv(clientSocket, buffer, BUFFER_SIZE, 0);
         if (bytesRead > 0) {
             buffer[bytesRead] = '\0'; // Null-terminate the string
-            printf("\nServer:\n%s\n", buffer);
 
             // Check if the server is prompting for an action
             if (strstr(buffer, "Your turn: hit or stand?") != NULL) {
+                printf("\n\nServer:\n%s", buffer);
                 // Get player action
-                printf("Enter your action (hit/stand): ");
-                fgets(buffer, BUFFER_SIZE, stdin);
-                buffer[strcspn(buffer, "\n")] = '\0'; // Remove newline character
-
+                printf("\nEnter your action (hit/stand): ");
+                get_validated_input(buffer, BUFFER_SIZE);
                 // Send action to server
                 send(clientSocket, buffer, strlen(buffer), 0);
+            } else if (strstr(buffer, "Play again? (yes/no):") != NULL) {
+                // Split the final result from the "Play again?" prompt.
+                char *prompt_location = strstr(buffer, "\nPlay again? (yes/no):");
+                *prompt_location = '\0'; // Cut the string to separate the result.
+
+                printf("\n\nServer:\n%s", buffer); // Print just the game result.
+                printf("\n%s", prompt_location + 1); // Print the "Play again?" prompt.
+
+                printf("\nEnter your choice (yes/no): ");
+                fgets(buffer, BUFFER_SIZE, stdin);
+                buffer[strcspn(buffer, "\n")] = '\0'; // Remove newline
+                to_lowercase(buffer);
+                send(clientSocket, buffer, strlen(buffer), 0);
+
+                if (strcmp(buffer, "no") == 0) {
+                    break; // Exit loop if user chooses not to play again
+                }
+            } else if (strcmp(buffer, "NEW_ROUND") == 0) {
+                // Server is starting a new round.
+                printBanner();
+            } else {
+                printf("\n\nServer:\n%s", buffer); // Handle any other messages
             }
         } else if (bytesRead == 0) {
             printf("Connection closed by server.\n");
@@ -99,9 +138,9 @@ int main() {
     }
 
     // Cleanup
-    closesocket(clientSocket);
-    WSACleanup();
+    close(clientSocket);
 
+    printBanner(); // Show the banner one last time at the end.
     printf("%s\nGame Over.\n\n%s", getColor(0), "\033[0m");
 
     // Wait for user input before exiting

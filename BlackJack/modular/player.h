@@ -1,12 +1,10 @@
 #ifndef PLAYER_H
 #define PLAYER_H
 
-#include <winsock2.h>
-
 #define MAX_PLAYERS 4
 
 typedef struct {
-    SOCKET socket;
+    int socket;
     char name[50];
     int hand[10];
     int hand_size;

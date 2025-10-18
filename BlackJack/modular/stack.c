@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <string.h>
 
 void initializeStack(Stack *stack) {
     stack->top = -1;
@@ -44,25 +45,20 @@ void shuffleCards(int *cards, int size) {
 void fillStack(Stack *stack) {
     int cards[STACK_SIZE];
     for (int i = 0; i < STACK_SIZE; i++) {
-        cards[i] = i; // Generate card values from 0 to 51
+        cards[i] = i;
     }
+
     shuffleCards(cards, STACK_SIZE);
     initializeStack(stack);
+
     for (int i = 0; i < STACK_SIZE; i++) {
         push(stack, cards[i]);
     }
 }
 
 void resetAndFillStack(Stack *stack) {
-    int cards[STACK_SIZE];
-    for (int i = 0; i < STACK_SIZE; i++) {
-        cards[i] = i; // Generate card values from 0 to 51
-    }
-    shuffleCards(cards, STACK_SIZE);
-    initializeStack(stack);
-    for (int i = 0; i < STACK_SIZE; i++) {
-        push(stack, cards[i]);
-    }
+    cleanStack(stack);
+    fillStack(stack);
 }
 
 void cleanStack(Stack *stack) {
@@ -70,24 +66,27 @@ void cleanStack(Stack *stack) {
 }
 
 void printStack(Stack *stack, int player_count) {
+    const int column_width = 25;
+    printf("\n==============================================================================\n");
+    printf("                      Initial Shuffled Deck (%d cards)\n", stack->top + 1);
+    printf("==============================================================================\n");
 
-    // Seed the random number generator
-    srand(time(NULL));
-
-    // Adjust the division of cards in the server if needed
-    // can be set to be dynamic based on the number of players
-    // Example:
-    int cardPartition = player_count;
-    // int cardPartition = 2;
-
+    // Print cards in neat columns
+    int count = 0;
     for (int i = 0; i <= stack->top; i++) {
-        if (i % 10 == 0 && i != 0) {
-            printf("\n"); // Print a blank line for a new stack
+        char temp_buffer[100];
+        const char *card_str = card_to_string(stack->cards[i]);
+        if (i == stack->top) {
+            snprintf(temp_buffer, sizeof(temp_buffer), "%s (<- Next Card)", card_str);
+            printf("%s", temp_buffer);
+        } else {
+            snprintf(temp_buffer, sizeof(temp_buffer), "%s", card_str);
+            printf("%s", temp_buffer);
         }
-        if (i % cardPartition == 0) {
-            printf("-------Stack %d-------\n", (i / 10) + 1); // Stack Bar
+        printf("%*s", column_width - visible_strlen(temp_buffer), ""); // Pad with spaces
+        if (++count % 3 == 0) {
+            printf("\n");
         }
-        printf("%s\n", card_to_string(stack->cards[i])); // Cards
     }
-    printf("\n");
+    printf("\n==============================================================================\n\n");
 }

@@ -4,11 +4,14 @@
 #include <string.h>
 
 void display_player_cards(Player *player) {
-    printf("Player %s's cards: ", player->name);
+    printf("Current Hand: ");
     for (int i = 0; i < player->hand_size; i++) {
-        printf("%d ", player->hand[i]);
+        printf("%s", card_to_string(player->hand[i]));
+        if (i < player->hand_size - 1) {
+            printf(" | ");
+        }
     }
-    printf("\n");
+    printf(" (Score: %d)\n", player->score);
 }
 
 void calculate_score(Player *player, Player players[], int player_count, Player *dealer) {

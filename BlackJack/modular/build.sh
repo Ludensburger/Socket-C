@@ -1,15 +1,16 @@
 #!/bin/bash
 
-# Compile each source file into an object file
-gcc -c player.c -o player.o
-gcc -c stack.c -o stack.o
-gcc -c utils.c -o utils.o
-gcc -c game_state.c -o game_state.o
-gcc -c server.c -o server.o
-gcc -c client.c -o client.o
+# Exit immediately if a command exits with a non-zero status.
+set -e
 
-# Link all object files to create the server executable
-gcc player.o stack.o utils.o game_state.o server.o -o server.exe -lws2_32
+echo "Compiling server..."
+# Compile all server-side .c files into a 'server' executable
+# The -lm flag links the math library, which can be useful.
+gcc -o server server.c game_state.c player.c stack.c utils.c server_utils.c -lm
 
-# Link all object files to create the client executable
-gcc player.o stack.o utils.o game_state.o client.o -o client.exe -lws2_32
+echo "Compiling client..."
+# Compile client-side .c files into a 'client' executable
+gcc -o client client.c utils.c -lm
+
+echo "Build complete."
+echo "Run './server' in one terminal and './client' in another."
